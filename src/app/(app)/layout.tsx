@@ -16,9 +16,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       <AppSidebar variant="inset" collapsible="icon" />
       <SidebarInset>
         <SiteHeader />
-        <main id="main" className="flex flex-1 flex-col">
+        <div id="main" className="flex flex-1 flex-col">
           {children}
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )
