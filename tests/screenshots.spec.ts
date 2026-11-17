@@ -77,13 +77,16 @@ for (const scheme of schemes) {
         await shot(page, "orders", scheme)
       })
 
+      // The README shows the form in light and the Detail in dark only.
       test(`new-order-${scheme}`, async ({ page }) => {
+        test.skip(scheme === "dark", "not published")
         await page.goto("/orders/new")
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
         await shot(page, "new-order", scheme)
       })
 
       test(`order-sheet-${scheme}`, async ({ page }) => {
+        test.skip(scheme === "light", "not published")
         await page.goto("/orders")
         await page.getByRole("table", { name: "Orders" }).getByRole("row").nth(1).click()
         await expect(page.getByRole("dialog")).toHaveCSS("opacity", "1")

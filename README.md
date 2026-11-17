@@ -15,7 +15,7 @@ Origem: [Marcio-RF/algarve4all.com#31](https://github.com/Marcio-RF/algarve4all.
 
 ## No celular
 
-Abaixo de 768px (o **Celular**) o kit muda de forma: a tabela vira uma **Lista de cartões**, os filtros e a ordenação vão para um painel de baixo, o **Detalhe** abre em tela cheia, os **alvos de toque** passam a 44px e os campos a 16px (sem zoom no iOS). Tudo verificado a 375×812 pelo `pnpm check:mobile`, que também tira as capturas abaixo.
+Abaixo de 768px (o **Celular**) o kit muda de forma: a tabela vira uma **Lista de cartões**, os Filtros (facetas e ordenação) vão para um painel de baixo, o **Detalhe** abre em tela cheia, os **alvos de toque** passam a 44px e os campos a 16px (sem zoom no iOS). Tudo verificado a 375×812 pelo `pnpm check:mobile`, que também tira as capturas abaixo.
 
 | | Claro | Escuro |
 |---|---|---|
@@ -125,6 +125,6 @@ src/app/(app)/**/page.tsx     páginas de exemplo                  → @backoffi
 - Todo o estado leva texto ou ícone além da cor (`StatusBadge`, delta dos KPIs).
 - Valores numéricos alinham à direita e usam `tabular-nums`; IDs usam `font-mono`.
 - Uma página = `PageContainer` + `PageHeader` (título, descrição curta, ações à direita).
-- Tabelas: pesquisa + filtros em chips por cima (num painel de baixo no celular), detalhe num `DetailSheet`, ações da linha no menu `⋯`.
+- Tabelas: pesquisa + filtros em chips por cima (num painel de baixo no celular), Detalhe num `DetailSheet`, ações da linha no menu `⋯`.
 - Formulários: secções `FormSection`, erros específicos ("Enter a valid email address, like name@example.com"), foco no primeiro campo inválido, ações numa barra fixa em baixo.
 - Gráficos: um eixo y, sem legendas para uma série só, tooltip sempre.
