@@ -35,11 +35,11 @@ O projeto precisa de Next.js com App Router, Tailwind v4 e shadcn inicializado (
 
    ```json
    "registries": {
-     "@backoffice": "https://<onde-o-registry-estiver-publicado>/r/{name}.json"
+     "@backoffice": "https://raw.githubusercontent.com/Marcio-RF/backoffice-kit/main/public/r/{name}.json"
    }
    ```
 
-   Para testar localmente: `pnpm dev` neste repositório e use `http://localhost:3000/r/{name}.json`.
+   O registry é servido direto do branch `main`: o que for commitado em `public/r/` fica disponível. Para fixar uma versão, troque `main` por uma tag ou commit. Para testar mudanças antes do push, corra `pnpm dev` neste repositório e use `http://localhost:3000/r/{name}.json`.
 
 2. Instale o que precisar:
 
