@@ -63,6 +63,8 @@ pnpm install
 pnpm dev                 # protótipo em http://localhost:3000
 pnpm exec shadcn build   # regenera public/r/*.json a partir de registry.json
 pnpm build
+pnpm exec playwright install chromium   # uma vez, para o check:mobile
+pnpm check:mobile        # build + start + Playwright a 375px
 python scripts/check-contrast.py src/app/globals.css   # contraste AA dos tokens, claro e escuro
 ```
 

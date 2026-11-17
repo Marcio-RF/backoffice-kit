@@ -16,6 +16,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import { navigation } from "@/lib/nav"
+import { mergeLabels } from "@/lib/labels"
 
 export type CommandMenuLabels = {
   trigger: string
@@ -52,7 +53,7 @@ export const defaultCommandMenuLabels: CommandMenuLabels = {
 }
 
 export function CommandMenu({ labels }: { labels?: Partial<CommandMenuLabels> }) {
-  const t = { ...defaultCommandMenuLabels, ...labels }
+  const t = mergeLabels(defaultCommandMenuLabels, labels)
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const { setTheme } = useTheme()

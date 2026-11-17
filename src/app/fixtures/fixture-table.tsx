@@ -32,8 +32,9 @@ export function FixtureTable() {
       columns={columns}
       data={data}
       pageSize={3}
-      // `nextPage` is deliberately not overridden: the default must survive a partial `labels`.
+      // `nextPage` is explicitly `undefined`: the default must survive.
       labels={{
+        nextPage: undefined,
         noResults: "Sem resultados.",
         previousPage: "Página anterior",
         range: (from, to, total) => `${from}–${to} de ${total}`,

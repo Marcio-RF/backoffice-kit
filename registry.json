@@ -175,6 +175,10 @@
           "path": "src/app/layout.tsx",
           "type": "registry:page",
           "target": "app/layout.tsx"
+        },
+        {
+          "path": "src/lib/labels.ts",
+          "type": "registry:lib"
         }
       ]
     },
@@ -219,6 +223,10 @@
         {
           "path": "src/components/status-badge.tsx",
           "type": "registry:component"
+        },
+        {
+          "path": "src/lib/labels.ts",
+          "type": "registry:lib"
         }
       ]
     },

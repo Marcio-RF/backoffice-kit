@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
+import { mergeLabels } from "@/lib/labels"
 import { cn } from "@/lib/utils"
 
 type Option = { label: string; value: string }
@@ -45,7 +46,7 @@ export function FacetedFilter<TData, TValue>({
   /** Partial overrides, merged over `defaultFacetedFilterLabels`. */
   labels?: Partial<FacetedFilterLabels>
 }) {
-  const t = { ...defaultFacetedFilterLabels, ...labels }
+  const t = mergeLabels(defaultFacetedFilterLabels, labels)
   const facets = column?.getFacetedUniqueValues()
   const selected = new Set((column?.getFilterValue() as string[] | undefined) ?? [])
 

@@ -20,6 +20,7 @@ import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { mergeLabels } from "@/lib/labels"
 import { cn } from "@/lib/utils"
 
 export type Density = "comfortable" | "compact"
@@ -65,7 +66,7 @@ export function DataTable<TData>({
   emptyState,
   labels,
 }: DataTableProps<TData>) {
-  const t = { ...defaultDataTableLabels, ...labels }
+  const t = mergeLabels(defaultDataTableLabels, labels)
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -157,7 +158,7 @@ export function DataTable<TData>({
         </Table>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-muted-foreground">
-        <p aria-live="polite" className="tabular-nums">
+        <p role="status" className="tabular-nums">
           {selected > 0 ? `${t.selected(selected, filtered)} · ` : null}
           {t.range(from, to, filtered)}
         </p>

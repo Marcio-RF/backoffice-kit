@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { mergeLabels } from "@/lib/labels"
 
 export type NavUserLabels = {
   account: string
@@ -45,7 +46,7 @@ function initials(name: string) {
 }
 
 export function NavUser({ user, labels }: { user: User; labels?: Partial<NavUserLabels> }) {
-  const t = { ...defaultNavUserLabels, ...labels }
+  const t = mergeLabels(defaultNavUserLabels, labels)
   const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
 

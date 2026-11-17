@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { mergeLabels } from "@/lib/labels"
 
 export type WorkspaceSwitcherLabels = {
   environment: string
@@ -31,7 +32,7 @@ export function WorkspaceSwitcher({
   name?: string
   labels?: Partial<WorkspaceSwitcherLabels>
 }) {
-  const t = { ...defaultWorkspaceSwitcherLabels, ...labels }
+  const t = mergeLabels(defaultWorkspaceSwitcherLabels, labels)
   const { isMobile } = useSidebar()
   const [current, setCurrent] = React.useState(0)
 

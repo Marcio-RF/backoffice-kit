@@ -11,8 +11,7 @@ const pages = [
 for (const { name, path } of pages) {
   test(`${name} has no horizontal scroll at 375px`, async ({ page }) => {
     await page.goto(path)
-    await expect(page.getByRole("main")).toBeVisible()
-    await page.waitForLoadState("networkidle")
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
 
     const { scrollWidth, clientWidth } = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
