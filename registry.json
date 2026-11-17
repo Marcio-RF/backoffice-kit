@@ -337,7 +337,7 @@
       "name": "examples",
       "type": "registry:block",
       "title": "Example pages",
-      "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings) with sample data. Install to start from a working back office.",
+      "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings, and the 2-step Quick order in the sidebar-free mobile flow) with sample data. Install to start from a working back office.",
       "registryDependencies": [
         "chart",
         "sheet",
