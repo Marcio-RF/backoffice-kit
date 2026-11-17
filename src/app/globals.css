@@ -148,3 +148,61 @@
     font-variant-numeric: tabular-nums;
   }
 }
+/* Touch targets below md (ADR 0001). Primitives keep their compact h-8; this rule
+   lifts them by data-slot. A new shadcn primitive needs adding here. */
+@media (width < 48rem) {
+  [data-slot="button"],
+  [data-slot="toggle"],
+  [data-slot="toggle-group-item"],
+  [data-slot="sidebar-trigger"],
+  [data-slot="sidebar-menu-action"],
+  [data-slot="popover-trigger"],
+  [data-slot="dropdown-menu-trigger"],
+  [data-slot="dialog-trigger"],
+  [data-slot="sheet-trigger"],
+  [data-slot="column-header"],
+  [data-slot="row-link"] {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+  [data-slot="input"],
+  [data-slot="textarea"],
+  [data-slot="select-trigger"],
+  [data-slot="sidebar-input"],
+  [data-slot="tabs-trigger"],
+  [data-slot="sidebar-menu-button"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="dropdown-menu-checkbox-item"],
+  [data-slot="dropdown-menu-radio-item"],
+  [data-slot="dropdown-menu-sub-trigger"],
+  [data-slot="select-item"],
+  [data-slot="command-item"] {
+    min-height: 2.75rem;
+  }
+  /* 16px stops iOS Safari zooming the page on focus. */
+  [data-slot="input"],
+  [data-slot="textarea"],
+  [data-slot="select-trigger"],
+  [data-slot="sidebar-input"],
+  [data-slot="command-input"] {
+    font-size: 1rem;
+  }
+  /* Small controls keep their look; an invisible 44px area makes them tappable. */
+  [data-slot="checkbox"],
+  [data-slot="radio-group-item"],
+  [data-slot="switch"] {
+    position: relative;
+  }
+  [data-slot="checkbox"]::after,
+  [data-slot="radio-group-item"]::after,
+  [data-slot="switch"]::after {
+    content: "";
+    position: absolute;
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: 2.75rem;
+    height: 2.75rem;
+    transform: translate(-50%, -50%);
+  }
+}

@@ -58,6 +58,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
       cell: ({ row }) => (
         <button
           type="button"
+          data-slot="row-link"
           onClick={(e) => {
             e.stopPropagation()
             open(row.original)
