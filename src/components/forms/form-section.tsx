@@ -29,7 +29,10 @@ export function FormSection({
 /** Sticky footer for primary form actions. */
 export function FormActions({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 mt-2 flex items-center justify-end gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
+    <div
+      data-slot="form-actions"
+      className="sticky bottom-0 z-10 -mx-4 mt-2 flex items-center justify-end gap-2 border-t bg-background/90 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:-mx-6 md:px-6"
+    >
       {children}
     </div>
   )
