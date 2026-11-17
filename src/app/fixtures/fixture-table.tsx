@@ -3,8 +3,8 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/data-table/data-table"
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 
 type Row = { name: string; city: string }
 
@@ -13,6 +13,9 @@ const data: Row[] = ["Ana", "Bruno", "Carla", "Diogo", "Eva", "Filipe", "Graça"
   name,
   city: cities[i % cities.length],
 }))
+
+const multi = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
+  value.includes(row.getValue(id) as string)
 
 const select: ColumnDef<Row> = {
   id: "select",
@@ -29,7 +32,7 @@ const select: ColumnDef<Row> = {
 const columns: ColumnDef<Row>[] = [
   select,
   { accessorKey: "name", header: "Nome", meta: { mobile: "title" } },
-  { accessorKey: "city", header: "Cidade", meta: { mobile: "subtitle" } },
+  { accessorKey: "city", header: "Cidade", meta: { mobile: "subtitle" }, filterFn: multi },
 ]
 
 // No column declares a card slot: the first column with data becomes the title.
@@ -54,12 +57,20 @@ export function FixtureTable() {
         range: (from, to, total) => `${from}–${to} de ${total}`,
         selected: (selected, total) => `${selected} de ${total} selecionados`,
       }}
-      toolbar={(table) => (
-        <Input
-          type="search"
-          aria-label="Pesquisar"
-          value={(table.getState().globalFilter as string) ?? ""}
-          onChange={(e) => table.setGlobalFilter(e.target.value)}
+      toolbar={(table, density, setDensity) => (
+        <DataTableToolbar
+          table={table}
+          density={density}
+          onDensityChange={setDensity}
+          search={{ label: "Pesquisar" }}
+          filters={[{ column: "city", title: "Cidade", options: cities.map((c) => ({ value: c, label: c })) }]}
+          labels={{
+            filters: "Filtros",
+            filtersButton: (n) => (n > 0 ? `Filtros (${n})` : "Filtros"),
+            showResults: (n) => `Ver ${n} resultados`,
+            clear: "Limpar",
+            sortBy: "Ordenar por",
+          }}
         />
       )}
     />

@@ -34,6 +34,8 @@ declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     mobile?: CardSlot
+    /** Plain-text name of the column for menus (Sort by, column visibility) when `header` is not a string. */
+    title?: string
   }
 }
 

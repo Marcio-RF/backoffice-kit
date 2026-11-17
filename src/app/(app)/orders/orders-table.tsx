@@ -1,29 +1,25 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import { Columns3, MoreHorizontal, Rows3, Rows4, Search, X } from "lucide-react"
+import { MoreHorizontal } from "lucide-react"
 import * as React from "react"
 import { toast } from "sonner"
 
 import { ColumnHeader } from "@/components/data-table/column-header"
 import { DataTable, useIsCardCell } from "@/components/data-table/data-table"
-import { FacetedFilter } from "@/components/data-table/faceted-filter"
+import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { type Order, currency, dateTime, orders, statusMeta } from "@/lib/data/orders"
 
 const multi = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
@@ -75,13 +71,13 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
     {
       accessorKey: "id",
       header: ({ column }) => <ColumnHeader column={column} title="Order" />,
-      meta: { mobile: "subtitle" },
+      meta: { mobile: "subtitle", title: "Order" },
       cell: ({ row }) => <OrderLink order={row.original} open={open} />,
       enableHiding: false,
     },
     {
       accessorKey: "customer",
-      meta: { mobile: "title" },
+      meta: { mobile: "title", title: "Customer" },
       header: ({ column }) => <ColumnHeader column={column} title="Customer" />,
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -108,7 +104,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
     },
     {
       accessorKey: "createdAt",
-      meta: { mobile: "subtitle" },
+      meta: { mobile: "subtitle", title: "Created" },
       header: ({ column }) => <ColumnHeader column={column} title="Created" />,
       cell: ({ row }) => (
         <time dateTime={row.original.createdAt} className="text-muted-foreground">
@@ -118,7 +114,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
     },
     {
       accessorKey: "amount",
-      meta: { mobile: "value" },
+      meta: { mobile: "value", title: "Amount" },
       header: ({ column }) => <ColumnHeader column={column} title="Amount" align="right" />,
       cell: ({ row }) => <div className="text-right font-medium">{currency.format(row.original.amount)}</div>,
     },
@@ -173,78 +169,18 @@ export function OrdersTable() {
         columns={columns}
         data={orders}
         onRowClick={setCurrent}
-        toolbar={(table, density, setDensity) => {
-          const filtered = table.getState().columnFilters.length > 0 || !!table.getState().globalFilter
-          return (
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  aria-label="Search orders"
-                  placeholder="Search orders…"
-                  value={(table.getState().globalFilter as string) ?? ""}
-                  onChange={(e) => table.setGlobalFilter(e.target.value)}
-                  className="w-56 pl-8 lg:w-72"
-                />
-              </div>
-              <FacetedFilter column={table.getColumn("status")} title="Status" options={statusOptions} />
-              <FacetedFilter column={table.getColumn("channel")} title="Channel" options={channelOptions} />
-              {filtered ? (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    table.resetColumnFilters()
-                    table.setGlobalFilter("")
-                  }}
-                >
-                  Reset
-                  <X aria-hidden />
-                </Button>
-              ) : null}
-              <div className="ml-auto flex items-center gap-2">
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={density}
-                  onValueChange={(v) => v && setDensity(v as typeof density)}
-                  aria-label="Row density"
-                >
-                  <ToggleGroupItem value="comfortable" aria-label="Comfortable rows">
-                    <Rows3 />
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="compact" aria-label="Compact rows">
-                    <Rows4 />
-                  </ToggleGroupItem>
-                </ToggleGroup>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      <Columns3 aria-hidden />
-                      Columns
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuLabel className="text-xs text-muted-foreground">Toggle columns</DropdownMenuLabel>
-                    {table
-                      .getAllColumns()
-                      .filter((c) => c.getCanHide())
-                      .map((c) => (
-                        <DropdownMenuCheckboxItem
-                          key={c.id}
-                          checked={c.getIsVisible()}
-                          onCheckedChange={(v) => c.toggleVisibility(!!v)}
-                          className="capitalize"
-                        >
-                          {c.id === "createdAt" ? "Created" : c.id}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          )
-        }}
+        toolbar={(table, density, setDensity) => (
+          <DataTableToolbar
+            table={table}
+            density={density}
+            onDensityChange={setDensity}
+            search={{ label: "Search orders", placeholder: "Search orders…" }}
+            filters={[
+              { column: "status", title: "Status", options: statusOptions },
+              { column: "channel", title: "Channel", options: channelOptions },
+            ]}
+          />
+        )}
       />
       <OrderSheet order={current} onOpenChange={(o) => !o && setCurrent(null)} />
     </>
