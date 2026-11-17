@@ -2,14 +2,15 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "examples",
   "title": "Example pages",
-  "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings) with sample data. Install to start from a working back office.",
+  "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings, and the 2-step Quick order in the sidebar-free mobile flow) with sample data. Install to start from a working back office.",
   "registryDependencies": [
     "chart",
     "sheet",
     "@backoffice/shell",
     "@backoffice/data-table",
     "@backoffice/form-layout",
-    "@backoffice/dashboard"
+    "@backoffice/dashboard",
+    "@backoffice/mobile-flow"
   ],
   "files": [
     {
@@ -73,6 +74,18 @@
       "content": "import type { Metadata } from \"next\"\r\n\r\nimport { FormSection } from \"@/components/forms/form-section\"\r\nimport { PageContainer, PageHeader } from \"@/components/shell/page-header\"\r\nimport { Button } from \"@/components/ui/button\"\r\nimport { Field, FieldDescription, FieldGroup, FieldLabel } from \"@/components/ui/field\"\r\nimport { Input } from \"@/components/ui/input\"\r\n\r\nexport const metadata: Metadata = { title: \"Settings\" }\r\n\r\nexport default function SettingsPage() {\r\n  return (\r\n    <PageContainer className=\"max-w-5xl\">\r\n      <PageHeader title=\"Settings\" description=\"Workspace details shown on invoices and emails.\" />\r\n      <FormSection title=\"Workspace\" description=\"Your company name and the address customers reply to.\">\r\n        <form className=\"flex flex-col gap-6\">\r\n          <FieldGroup>\r\n            <Field>\r\n              <FieldLabel htmlFor=\"ws-name\">Company name</FieldLabel>\r\n              <Input id=\"ws-name\" defaultValue=\"Acme Rentals\" />\r\n            </Field>\r\n            <Field>\r\n              <FieldLabel htmlFor=\"ws-email\">Reply-to email</FieldLabel>\r\n              <Input id=\"ws-email\" type=\"email\" defaultValue=\"hello@example.com\" />\r\n              <FieldDescription>Customers see this address when they reply to an email.</FieldDescription>\r\n            </Field>\r\n          </FieldGroup>\r\n          <div className=\"flex justify-end border-t pt-4\">\r\n            <Button type=\"submit\">Save changes</Button>\r\n          </div>\r\n        </form>\r\n      </FormSection>\r\n    </PageContainer>\r\n  )\r\n}\r\n",
       "type": "registry:page",
       "target": "app/(app)/settings/page.tsx"
+    },
+    {
+      "path": "src/app/(flow)/quick-order/page.tsx",
+      "content": "import type { Metadata } from \"next\"\n\nimport { QuickOrder } from \"./quick-order\"\n\nexport const metadata: Metadata = { title: \"Quick order\" }\n\nexport default function QuickOrderPage() {\n  return <QuickOrder />\n}\n",
+      "type": "registry:page",
+      "target": "app/(flow)/quick-order/page.tsx"
+    },
+    {
+      "path": "src/app/(flow)/quick-order/quick-order.tsx",
+      "content": "\"use client\"\n\nimport { useRouter } from \"next/navigation\"\nimport * as React from \"react\"\nimport { toast } from \"sonner\"\n\nimport {\n  MobileFlow,\n  MobileFlowActions,\n  MobileFlowContent,\n  MobileFlowHeader,\n} from \"@/components/mobile-flow/mobile-flow\"\nimport { Button } from \"@/components/ui/button\"\nimport { Field, FieldContent, FieldDescription, FieldError, FieldLabel, FieldTitle } from \"@/components/ui/field\"\nimport { Input } from \"@/components/ui/input\"\nimport { RadioGroup, RadioGroupItem } from \"@/components/ui/radio-group\"\nimport { orders } from \"@/lib/data/orders\"\n\nconst customers = [...new Map(orders.map((o) => [o.customer, o])).values()].slice(0, 20)\n\n/**\n * Quick order in two steps: choose the customer, then confirm the amount.\n * The step state lives here; `MobileFlow` only lays the screen out.\n */\nexport function QuickOrder() {\n  const router = useRouter()\n  const [step, setStep] = React.useState<1 | 2>(1)\n  const [customer, setCustomer] = React.useState(\"\")\n  const [amount, setAmount] = React.useState(\"\")\n  const [error, setError] = React.useState(\"\")\n  const [pending, setPending] = React.useState(false)\n\n  function confirm(e: React.FormEvent<HTMLFormElement>) {\n    e.preventDefault()\n    const value = Number(amount.replace(\",\", \".\"))\n    if (!value || value <= 0) {\n      setError(\"Enter an amount greater than 0.\")\n      document.getElementById(\"quick-amount\")?.focus()\n      return\n    }\n    setError(\"\")\n    setPending(true)\n    setTimeout(() => {\n      toast.success(\"Order created\", { description: `${customer}: ORD-20482 was added to the queue.` })\n      router.push(\"/orders\")\n    }, 600)\n  }\n\n  if (step === 1) {\n    return (\n      <MobileFlow>\n        <MobileFlowHeader title=\"Choose customer\" backHref=\"/orders\" right={<span className=\"text-muted-foreground\">1 / 2</span>} />\n        <MobileFlowContent>\n          <RadioGroup value={customer} onValueChange={setCustomer} aria-label=\"Customer\" className=\"gap-3\">\n            {customers.map((c) => (\n              <FieldLabel key={c.customer} htmlFor={`customer-${c.id}`}>\n                <Field orientation=\"horizontal\">\n                  <FieldContent>\n                    <FieldTitle>{c.customer}</FieldTitle>\n                    <FieldDescription>{c.email}</FieldDescription>\n                  </FieldContent>\n                  <RadioGroupItem value={c.customer} id={`customer-${c.id}`} />\n                </Field>\n              </FieldLabel>\n            ))}\n          </RadioGroup>\n        </MobileFlowContent>\n        <MobileFlowActions>\n          <Button type=\"button\" disabled={!customer} onClick={() => setStep(2)}>\n            Continue\n          </Button>\n        </MobileFlowActions>\n      </MobileFlow>\n    )\n  }\n\n  return (\n    <MobileFlow>\n      <MobileFlowHeader title=\"Confirm amount\" onBack={() => setStep(1)} right={<span className=\"text-muted-foreground\">2 / 2</span>} />\n      <form noValidate onSubmit={confirm} className=\"flex min-h-0 flex-1 flex-col\">\n        <MobileFlowContent>\n          <p className=\"text-muted-foreground\">\n            Order for <span className=\"font-medium text-foreground\">{customer}</span>\n          </p>\n          <Field data-invalid={!!error}>\n            <FieldLabel htmlFor=\"quick-amount\">Amount (€)</FieldLabel>\n            <Input\n              id=\"quick-amount\"\n              name=\"amount\"\n              inputMode=\"decimal\"\n              className=\"tabular-nums\"\n              value={amount}\n              onChange={(e) => setAmount(e.target.value)}\n              aria-invalid={!!error}\n              aria-describedby={error ? \"quick-amount-error\" : undefined}\n            />\n            {error ? <FieldError id=\"quick-amount-error\">{error}</FieldError> : null}\n          </Field>\n        </MobileFlowContent>\n        <MobileFlowActions>\n          <Button type=\"submit\" disabled={pending}>\n            {pending ? \"Creating…\" : \"Confirm order\"}\n          </Button>\n        </MobileFlowActions>\n      </form>\n    </MobileFlow>\n  )\n}\n",
+      "type": "registry:page",
+      "target": "app/(flow)/quick-order/quick-order.tsx"
     }
   ],
   "type": "registry:block"

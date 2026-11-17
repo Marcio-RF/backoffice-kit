@@ -313,17 +313,39 @@
       ]
     },
     {
+      "name": "mobile-flow",
+      "type": "registry:block",
+      "title": "Mobile flow",
+      "description": "Full-screen (dvh) layout without sidebar for tasks done on a phone: thin top bar (back, step title, right slot), scrolling content and a primary action bar fixed at the bottom with safe-area padding. Layout only; no step state.",
+      "registryDependencies": [
+        "button",
+        "@backoffice/theme"
+      ],
+      "files": [
+        {
+          "path": "src/lib/labels.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/components/mobile-flow/mobile-flow.tsx",
+          "type": "registry:component",
+          "target": "components/mobile-flow/mobile-flow.tsx"
+        }
+      ]
+    },
+    {
       "name": "examples",
       "type": "registry:block",
       "title": "Example pages",
-      "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings) with sample data. Install to start from a working back office.",
+      "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings, and the 2-step Quick order in the sidebar-free mobile flow) with sample data. Install to start from a working back office.",
       "registryDependencies": [
         "chart",
         "sheet",
         "@backoffice/shell",
         "@backoffice/data-table",
         "@backoffice/form-layout",
-        "@backoffice/dashboard"
+        "@backoffice/dashboard",
+        "@backoffice/mobile-flow"
       ],
       "files": [
         {
@@ -376,6 +398,16 @@
           "path": "src/app/(app)/settings/page.tsx",
           "type": "registry:page",
           "target": "app/(app)/settings/page.tsx"
+        },
+        {
+          "path": "src/app/(flow)/quick-order/page.tsx",
+          "type": "registry:page",
+          "target": "app/(flow)/quick-order/page.tsx"
+        },
+        {
+          "path": "src/app/(flow)/quick-order/quick-order.tsx",
+          "type": "registry:page",
+          "target": "app/(flow)/quick-order/quick-order.tsx"
         }
       ]
     }
