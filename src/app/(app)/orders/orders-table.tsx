@@ -6,7 +6,7 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import { ColumnHeader } from "@/components/data-table/column-header"
-import { DataTable } from "@/components/data-table/data-table"
+import { DataTable, useIsCardCell } from "@/components/data-table/data-table"
 import { FacetedFilter } from "@/components/data-table/faceted-filter"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,26 @@ import { type Order, currency, dateTime, orders, statusMeta } from "@/lib/data/o
 
 const multi = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
   value.includes(row.getValue(id) as string)
+
+function OrderLink({ order, open }: { order: Order; open: (o: Order) => void }) {
+  // Inside a card the whole card is the button, so the ID is plain text there.
+  const inCard = useIsCardCell()
+  const className = "rounded font-mono text-xs font-medium"
+  if (inCard) return <span className={className}>{order.id}</span>
+  return (
+    <button
+      type="button"
+      data-slot="row-link"
+      onClick={(e) => {
+        e.stopPropagation()
+        open(order)
+      }}
+      className={`${className} hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
+    >
+      {order.id}
+    </button>
+  )
+}
 
 function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
   return [
@@ -55,23 +75,13 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
     {
       accessorKey: "id",
       header: ({ column }) => <ColumnHeader column={column} title="Order" />,
-      cell: ({ row }) => (
-        <button
-          type="button"
-          data-slot="row-link"
-          onClick={(e) => {
-            e.stopPropagation()
-            open(row.original)
-          }}
-          className="rounded font-mono text-xs font-medium hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        >
-          {row.original.id}
-        </button>
-      ),
+      meta: { mobile: "subtitle" },
+      cell: ({ row }) => <OrderLink order={row.original} open={open} />,
       enableHiding: false,
     },
     {
       accessorKey: "customer",
+      meta: { mobile: "title" },
       header: ({ column }) => <ColumnHeader column={column} title="Customer" />,
       cell: ({ row }) => (
         <div className="min-w-0">
@@ -82,6 +92,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
     },
     {
       accessorKey: "status",
+      meta: { mobile: "status" },
       header: "Status",
       cell: ({ row }) => {
         const m = statusMeta[row.original.status]
@@ -97,6 +108,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
     },
     {
       accessorKey: "createdAt",
+      meta: { mobile: "subtitle" },
       header: ({ column }) => <ColumnHeader column={column} title="Created" />,
       cell: ({ row }) => (
         <time dateTime={row.original.createdAt} className="text-muted-foreground">
@@ -106,6 +118,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
     },
     {
       accessorKey: "amount",
+      meta: { mobile: "value" },
       header: ({ column }) => <ColumnHeader column={column} title="Amount" align="right" />,
       cell: ({ row }) => <div className="text-right font-medium">{currency.format(row.original.amount)}</div>,
     },
