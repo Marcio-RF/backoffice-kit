@@ -17,11 +17,19 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { segmentLabels } from "@/lib/nav"
 
-export function SiteHeader() {
+export type SiteHeaderLabels = {
+  /** First breadcrumb, the root page. */
+  overview: string
+}
+
+export const defaultSiteHeaderLabels: SiteHeaderLabels = { overview: "Overview" }
+
+export function SiteHeader({ labels }: { labels?: Partial<SiteHeaderLabels> }) {
+  const t = { ...defaultSiteHeaderLabels, ...labels }
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
   const crumbs = [
-    { href: "/", label: "Overview" },
+    { href: "/", label: t.overview },
     ...segments.map((s, i) => ({
       href: `/${segments.slice(0, i + 1).join("/")}`,
       label: segmentLabels[s] ?? s,

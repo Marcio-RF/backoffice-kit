@@ -147,6 +147,10 @@
           "type": "registry:component"
         },
         {
+          "path": "src/components/shell/skip-link.tsx",
+          "type": "registry:component"
+        },
+        {
           "path": "src/components/shell/page-header.tsx",
           "type": "registry:component"
         },

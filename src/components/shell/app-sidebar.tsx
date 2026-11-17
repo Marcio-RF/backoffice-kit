@@ -21,15 +21,30 @@ import {
 } from "@/components/ui/sidebar"
 import { navigation } from "@/lib/nav"
 
+export type AppSidebarLabels = {
+  navigation: string
+  /** Accessible name of the pending-count badge, e.g. "12 pending". */
+  pending: (count: string) => string
+}
+
+export const defaultAppSidebarLabels: AppSidebarLabels = {
+  navigation: "Main navigation",
+  pending: (count) => `${count} pending`,
+}
+
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`)
 }
 
-export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  labels,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { labels?: Partial<AppSidebarLabels> }) {
   const pathname = usePathname()
+  const t = { ...defaultAppSidebarLabels, ...labels }
 
   return (
-    <Sidebar aria-label="Main navigation" {...props}>
+    <Sidebar aria-label={t.navigation} {...props}>
       <SidebarHeader>
         <WorkspaceSwitcher />
       </SidebarHeader>
@@ -50,7 +65,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                         </Link>
                       </SidebarMenuButton>
                       {item.badge ? (
-                        <SidebarMenuBadge aria-label={`${item.badge} pending`}>{item.badge}</SidebarMenuBadge>
+                        <SidebarMenuBadge aria-label={t.pending(item.badge)}>{item.badge}</SidebarMenuBadge>
                       ) : null}
                     </SidebarMenuItem>
                   )

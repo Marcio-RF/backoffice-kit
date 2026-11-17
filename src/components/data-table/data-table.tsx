@@ -24,6 +24,24 @@ import { cn } from "@/lib/utils"
 
 export type Density = "comfortable" | "compact"
 
+export type DataTableLabels = {
+  noResults: string
+  previousPage: string
+  nextPage: string
+  /** Pagination range, e.g. "1–15 of 40". */
+  range: (from: number, to: number, total: number) => string
+  /** Selection count, e.g. "2 of 40 selected". */
+  selected: (selected: number, total: number) => string
+}
+
+export const defaultDataTableLabels: DataTableLabels = {
+  noResults: "No results.",
+  previousPage: "Previous page",
+  nextPage: "Next page",
+  range: (from, to, total) => `${from}–${to} of ${total}`,
+  selected: (selected, total) => `${selected} of ${total} selected`,
+}
+
 type DataTableProps<TData> = {
   columns: ColumnDef<TData>[]
   data: TData[]
@@ -33,6 +51,8 @@ type DataTableProps<TData> = {
   onRowClick?: (row: TData) => void
   pageSize?: number
   emptyState?: React.ReactNode
+  /** Partial overrides, merged over `defaultDataTableLabels`. */
+  labels?: Partial<DataTableLabels>
 }
 
 export function DataTable<TData>({
@@ -43,7 +63,9 @@ export function DataTable<TData>({
   onRowClick,
   pageSize = 15,
   emptyState,
+  labels,
 }: DataTableProps<TData>) {
+  const t = { ...defaultDataTableLabels, ...labels }
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -127,7 +149,7 @@ export function DataTable<TData>({
             ) : (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columns.length} className="h-48 text-center text-muted-foreground">
-                  {emptyState ?? "No results."}
+                  {emptyState ?? t.noResults}
                 </TableCell>
               </TableRow>
             )}
@@ -136,8 +158,8 @@ export function DataTable<TData>({
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-muted-foreground">
         <p aria-live="polite" className="tabular-nums">
-          {selected > 0 ? `${selected} of ${filtered} selected · ` : null}
-          {from}–{to} of {filtered}
+          {selected > 0 ? `${t.selected(selected, filtered)} · ` : null}
+          {t.range(from, to, filtered)}
         </p>
         <div className="flex items-center gap-1">
           <Button
@@ -145,7 +167,7 @@ export function DataTable<TData>({
             size="icon"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            aria-label="Previous page"
+            aria-label={t.previousPage}
           >
             <ChevronLeft />
           </Button>
@@ -154,7 +176,7 @@ export function DataTable<TData>({
             size="icon"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            aria-label="Next page"
+            aria-label={t.nextPage}
           >
             <ChevronRight />
           </Button>
