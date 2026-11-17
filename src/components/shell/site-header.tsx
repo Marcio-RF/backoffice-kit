@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Fragment } from "react"
 
-import { CommandMenu } from "@/components/shell/command-menu"
+import { type CommandMenuLabels, CommandMenu } from "@/components/shell/command-menu"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,12 +16,23 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { segmentLabels } from "@/lib/nav"
+import { mergeLabels } from "@/lib/labels"
 
-export function SiteHeader() {
+export type SiteHeaderLabels = {
+  /** First breadcrumb, the root page. */
+  overview: string
+  /** Overrides forwarded to the command menu. */
+  commandMenu?: Partial<CommandMenuLabels>
+}
+
+export const defaultSiteHeaderLabels: SiteHeaderLabels = { overview: "Overview" }
+
+export function SiteHeader({ labels }: { labels?: Partial<SiteHeaderLabels> }) {
+  const t = mergeLabels(defaultSiteHeaderLabels, labels)
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
   const crumbs = [
-    { href: "/", label: "Overview" },
+    { href: "/", label: t.overview },
     ...segments.map((s, i) => ({
       href: `/${segments.slice(0, i + 1).join("/")}`,
       label: segmentLabels[s] ?? s,
@@ -54,7 +65,7 @@ export function SiteHeader() {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="ml-auto flex items-center gap-2">
-        <CommandMenu />
+        <CommandMenu labels={t.commandMenu} />
       </div>
     </header>
   )

@@ -15,20 +15,42 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
+import { mergeLabels } from "@/lib/labels"
 import { cn } from "@/lib/utils"
 
 type Option = { label: string; value: string }
+
+export type FacetedFilterLabels = {
+  /** Shown on the chip when more than two options are selected. */
+  selected: (count: number) => string
+  noResults: string
+  clear: string
+}
+
+export const defaultFacetedFilterLabels: FacetedFilterLabels = {
+  selected: (count) => `${count} selected`,
+  noResults: "No results found.",
+  clear: "Clear filter",
+}
+
+/** `filterFn` for columns used with `FacetedFilter` and the toolbar's Filters panel: the row matches any selected value. */
+export const multiValueFilter = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
+  value.includes(row.getValue(id) as string)
 
 /** Stripe-style filter chip: multi-select with live counts per option. */
 export function FacetedFilter<TData, TValue>({
   column,
   title,
   options,
+  labels,
 }: {
   column?: Column<TData, TValue>
   title: string
   options: Option[]
+  /** Partial overrides, merged over `defaultFacetedFilterLabels`. */
+  labels?: Partial<FacetedFilterLabels>
 }) {
+  const t = mergeLabels(defaultFacetedFilterLabels, labels)
   const facets = column?.getFacetedUniqueValues()
   const selected = new Set((column?.getFilterValue() as string[] | undefined) ?? [])
 
@@ -50,7 +72,7 @@ export function FacetedFilter<TData, TValue>({
               <Separator orientation="vertical" className="mx-0.5 data-[orientation=vertical]:h-4" />
               <span className="rounded bg-secondary px-1.5 text-xs font-medium">
                 {selected.size > 2
-                  ? `${selected.size} selected`
+                  ? t.selected(selected.size)
                   : options
                       .filter((o) => selected.has(o.value))
                       .map((o) => o.label)
@@ -64,7 +86,7 @@ export function FacetedFilter<TData, TValue>({
         <Command>
           <CommandInput placeholder={title} />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>{t.noResults}</CommandEmpty>
             <CommandGroup>
               {options.map((o) => {
                 const isSelected = selected.has(o.value)
@@ -92,7 +114,7 @@ export function FacetedFilter<TData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem onSelect={() => column?.setFilterValue(undefined)} className="justify-center">
-                    Clear filter
+                    {t.clear}
                   </CommandItem>
                 </CommandGroup>
               </>

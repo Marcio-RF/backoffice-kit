@@ -15,6 +15,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { mergeLabels } from "@/lib/labels"
+
+export type NavUserLabels = {
+  account: string
+  theme: string
+  light: string
+  dark: string
+  system: string
+  logOut: string
+}
+
+export const defaultNavUserLabels: NavUserLabels = {
+  account: "Account",
+  theme: "Theme",
+  light: "Light",
+  dark: "Dark",
+  system: "System",
+  logOut: "Log out",
+}
 
 type User = { name: string; email: string }
 
@@ -26,7 +45,8 @@ function initials(name: string) {
     .join("")
 }
 
-export function NavUser({ user }: { user: User }) {
+export function NavUser({ user, labels }: { user: User; labels?: Partial<NavUserLabels> }) {
+  const t = mergeLabels(defaultNavUserLabels, labels)
   const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
 
@@ -54,28 +74,28 @@ export function NavUser({ user }: { user: User }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <UserRound aria-hidden />
-              Account
+              {t.account}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs text-muted-foreground">Theme</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t.theme}</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
               <DropdownMenuRadioItem value="light">
                 <Sun aria-hidden />
-                Light
+                {t.light}
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="dark">
                 <Moon aria-hidden />
-                Dark
+                {t.dark}
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="system">
                 <Monitor aria-hidden />
-                System
+                {t.system}
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <LogOut aria-hidden />
-              Log out
+              {t.logOut}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

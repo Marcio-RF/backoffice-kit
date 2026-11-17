@@ -21,6 +21,7 @@ export function ColumnHeader<TData, TValue>({
   return (
     <button
       type="button"
+      data-slot="column-header"
       onClick={column.getToggleSortingHandler()}
       className={cn(
         "-mx-1.5 inline-flex h-7 items-center gap-1 rounded-md px-1.5 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
