@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { ColumnHeader } from "@/components/data-table/column-header"
 import { DataTable, useIsCardCell } from "@/components/data-table/data-table"
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
+import { multiValueFilter } from "@/components/data-table/faceted-filter"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -21,9 +22,6 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { type Order, currency, dateTime, orders, statusMeta } from "@/lib/data/orders"
-
-const multi = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
-  value.includes(row.getValue(id) as string)
 
 function OrderLink({ order, open }: { order: Order; open: (o: Order) => void }) {
   // Inside a card the whole card is the button, so the ID is plain text there.
@@ -94,13 +92,13 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
         const m = statusMeta[row.original.status]
         return <StatusBadge tone={m.tone}>{m.label}</StatusBadge>
       },
-      filterFn: multi,
+      filterFn: multiValueFilter,
     },
     {
       accessorKey: "channel",
       header: "Channel",
       cell: ({ row }) => <span className="text-muted-foreground">{row.original.channel}</span>,
-      filterFn: multi,
+      filterFn: multiValueFilter,
     },
     {
       accessorKey: "createdAt",

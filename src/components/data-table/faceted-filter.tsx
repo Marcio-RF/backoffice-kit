@@ -33,6 +33,10 @@ export const defaultFacetedFilterLabels: FacetedFilterLabels = {
   clear: "Clear filter",
 }
 
+/** `filterFn` for columns used with `FacetedFilter` and the toolbar's Filters panel: the row matches any selected value. */
+export const multiValueFilter = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
+  value.includes(row.getValue(id) as string)
+
 /** Stripe-style filter chip: multi-select with live counts per option. */
 export function FacetedFilter<TData, TValue>({
   column,

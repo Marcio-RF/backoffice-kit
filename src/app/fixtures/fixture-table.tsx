@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
+import { multiValueFilter } from "@/components/data-table/faceted-filter"
 import { Checkbox } from "@/components/ui/checkbox"
 
 type Row = { name: string; city: string }
@@ -13,9 +14,6 @@ const data: Row[] = ["Ana", "Bruno", "Carla", "Diogo", "Eva", "Filipe", "Graça"
   name,
   city: cities[i % cities.length],
 }))
-
-const multi = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
-  value.includes(row.getValue(id) as string)
 
 const select: ColumnDef<Row> = {
   id: "select",
@@ -32,7 +30,7 @@ const select: ColumnDef<Row> = {
 const columns: ColumnDef<Row>[] = [
   select,
   { accessorKey: "name", header: "Nome", meta: { mobile: "title" } },
-  { accessorKey: "city", header: "Cidade", meta: { mobile: "subtitle" }, filterFn: multi },
+  { accessorKey: "city", header: "Cidade", meta: { mobile: "subtitle" }, filterFn: multiValueFilter },
 ]
 
 // No column declares a card slot: the first column with data becomes the title.
@@ -70,7 +68,16 @@ export function FixtureTable() {
             showResults: (n) => `Ver ${n} resultados`,
             clear: "Limpar",
             sortBy: "Ordenar por",
+            ascending: "Ascendente",
+            descending: "Descendente",
+            reset: "Repor",
+            density: "Densidade das linhas",
+            comfortable: "Linhas confortáveis",
+            compact: "Linhas compactas",
+            columns: "Colunas",
+            toggleColumns: "Mostrar colunas",
           }}
+          filterLabels={{ selected: (n) => `${n} selecionados`, noResults: "Sem resultados.", clear: "Limpar filtro" }}
         />
       )}
     />

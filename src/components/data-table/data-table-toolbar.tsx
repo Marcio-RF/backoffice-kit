@@ -158,7 +158,7 @@ export function DataTableToolbar<TData>({
                   onValueChange={(id) => table.setSorting([{ id, desc: sort?.desc ?? false }])}
                 >
                   {sortable.map((c) => (
-                    <Label key={c.id} className="min-h-11 gap-3">
+                    <Label key={c.id} className="gap-3 py-2">
                       <RadioGroupItem value={c.id} />
                       {columnTitle(c)}
                     </Label>
@@ -171,11 +171,11 @@ export function DataTableToolbar<TData>({
                   onValueChange={(dir) => sort && table.setSorting([{ id: sort.id, desc: dir === "desc" }])}
                   className="grid-cols-2"
                 >
-                  <Label className="min-h-11 gap-3">
+                  <Label className="gap-3 py-2">
                     <RadioGroupItem value="asc" />
                     {t.ascending}
                   </Label>
-                  <Label className="min-h-11 gap-3">
+                  <Label className="gap-3 py-2">
                     <RadioGroupItem value="desc" />
                     {t.descending}
                   </Label>
@@ -281,7 +281,7 @@ function FacetSection<TData>({ filter, column }: { filter: FacetFilter; column?:
     <fieldset className="flex flex-col gap-1">
       <legend className="mb-1 font-medium">{filter.title}</legend>
       {filter.options.map((o) => (
-        <Label key={o.value} className="min-h-11 gap-3">
+        <Label key={o.value} className="gap-3 py-2">
           <Checkbox checked={selected.has(o.value)} onCheckedChange={(v) => toggle(o.value, v === true)} />
           <span className="flex-1">{o.label}</span>
           <span className="font-mono text-xs text-muted-foreground tabular-nums">{facets?.get(o.value) ?? 0}</span>
