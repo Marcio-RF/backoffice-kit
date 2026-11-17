@@ -160,6 +160,7 @@
   [data-slot="dropdown-menu-trigger"],
   [data-slot="dialog-trigger"],
   [data-slot="sheet-trigger"],
+  [data-slot="sheet-close"],
   [data-slot="column-header"],
   [data-slot="row-link"] {
     min-height: 2.75rem;

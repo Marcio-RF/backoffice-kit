@@ -7,6 +7,14 @@ import { toast } from "sonner"
 
 import { ColumnHeader } from "@/components/data-table/column-header"
 import { DataTable, useIsCardCell } from "@/components/data-table/data-table"
+import {
+  DetailSheet,
+  DetailSheetBody,
+  DetailSheetDescription,
+  DetailSheetFooter,
+  DetailSheetHeader,
+  DetailSheetTitle,
+} from "@/components/data-table/detail-sheet"
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
 import { multiValueFilter } from "@/components/data-table/faceted-filter"
 import { StatusBadge } from "@/components/status-badge"
@@ -19,9 +27,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { type Order, currency, dateTime, orders, statusMeta } from "@/lib/data/orders"
+
+const copyOrderId = (order: Order) => navigator.clipboard?.writeText(order.id)
+const cancelOrder = (order: Order) =>
+  toast.success(`${order.id} cancelled`, { description: "The customer was notified." })
 
 function OrderLink({ order, open }: { order: Order; open: (o: Order) => void }) {
   // Inside a card the whole card is the button, so the ID is plain text there.
@@ -135,13 +145,13 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem onSelect={() => open(row.original)}>View details</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigator.clipboard?.writeText(row.original.id)}>
+              <DropdownMenuItem onSelect={() => copyOrderId(row.original)}>
                 Copy order ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onSelect={() => toast.success(`${row.original.id} cancelled`, { description: "The customer was notified." })}
+                onSelect={() => cancelOrder(row.original)}
               >
                 Cancel order
               </DropdownMenuItem>
@@ -188,18 +198,17 @@ export function OrdersTable() {
 function OrderSheet({ order, onOpenChange }: { order: Order | null; onOpenChange: (open: boolean) => void }) {
   const m = order ? statusMeta[order.status] : null
   return (
-    <Sheet open={!!order} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md">
-        {order && m ? (
-          <>
-            <SheetHeader>
-              <SheetDescription className="font-mono text-xs">{order.id}</SheetDescription>
-              <SheetTitle className="text-lg">{order.customer}</SheetTitle>
-              <div>
-                <StatusBadge tone={m.tone}>{m.label}</StatusBadge>
-              </div>
-            </SheetHeader>
-            <Separator />
+    <DetailSheet open={!!order} onOpenChange={onOpenChange}>
+      {order && m ? (
+        <>
+          <DetailSheetHeader>
+            <DetailSheetDescription className="font-mono text-xs">{order.id}</DetailSheetDescription>
+            <DetailSheetTitle className="text-lg">{order.customer}</DetailSheetTitle>
+            <div>
+              <StatusBadge tone={m.tone}>{m.label}</StatusBadge>
+            </div>
+          </DetailSheetHeader>
+          <DetailSheetBody>
             <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 px-4">
               <dt className="text-muted-foreground">Amount</dt>
               <dd className="font-medium tabular-nums">{currency.format(order.amount)}</dd>
@@ -210,15 +219,24 @@ function OrderSheet({ order, onOpenChange }: { order: Order | null; onOpenChange
               <dt className="text-muted-foreground">Created</dt>
               <dd className="tabular-nums">{dateTime.format(new Date(order.createdAt))}</dd>
             </dl>
-            <SheetFooter className="flex-row justify-end">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button onClick={() => toast.success(`${order.id} confirmed`)}>Confirm order</Button>
-            </SheetFooter>
-          </>
-        ) : null}
-      </SheetContent>
-    </Sheet>
+          </DetailSheetBody>
+          <DetailSheetFooter>
+            <Button variant="outline" onClick={() => copyOrderId(order)}>
+              Copy order ID
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                cancelOrder(order)
+                onOpenChange(false)
+              }}
+            >
+              Cancel order
+            </Button>
+            <Button onClick={() => toast.success(`${order.id} confirmed`)}>Confirm order</Button>
+          </DetailSheetFooter>
+        </>
+      ) : null}
+    </DetailSheet>
   )
 }

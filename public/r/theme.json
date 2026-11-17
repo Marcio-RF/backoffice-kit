@@ -99,7 +99,7 @@
       }
     },
     "@media (width < 48rem)": {
-      "[data-slot=\"button\"], [data-slot=\"toggle\"], [data-slot=\"toggle-group-item\"], [data-slot=\"sidebar-trigger\"], [data-slot=\"sidebar-menu-action\"], [data-slot=\"popover-trigger\"], [data-slot=\"dropdown-menu-trigger\"], [data-slot=\"dialog-trigger\"], [data-slot=\"sheet-trigger\"], [data-slot=\"column-header\"], [data-slot=\"row-link\"]": {
+      "[data-slot=\"button\"], [data-slot=\"toggle\"], [data-slot=\"toggle-group-item\"], [data-slot=\"sidebar-trigger\"], [data-slot=\"sidebar-menu-action\"], [data-slot=\"popover-trigger\"], [data-slot=\"dropdown-menu-trigger\"], [data-slot=\"dialog-trigger\"], [data-slot=\"sheet-trigger\"], [data-slot=\"sheet-close\"], [data-slot=\"column-header\"], [data-slot=\"row-link\"]": {
         "min-height": "2.75rem",
         "min-width": "2.75rem"
       },
