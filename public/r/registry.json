@@ -1,0 +1,335 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "backoffice",
+  "homepage": "https://github.com/Marcio-RF/backoffice-kit",
+  "items": [
+    {
+      "name": "theme",
+      "type": "registry:theme",
+      "title": "Back office theme",
+      "description": "Zinc neutrals + one indigo accent (swap --primary/--ring/--chart-*), status tokens (success/warning/info), 8px radius, tabular numbers. WCAG 2.1 AA in light and dark.",
+      "cssVars": {
+        "theme": {
+          "color-success": "var(--success)",
+          "color-warning": "var(--warning)",
+          "color-info": "var(--info)",
+          "font-sans": "var(--font-inter)",
+          "font-mono": "var(--font-geist-mono)",
+          "font-heading": "var(--font-inter)"
+        },
+        "light": {
+          "radius": "0.5rem",
+          "background": "oklch(1 0 0)",
+          "foreground": "oklch(0.141 0.005 285.823)",
+          "card": "oklch(1 0 0)",
+          "card-foreground": "oklch(0.141 0.005 285.823)",
+          "popover": "oklch(1 0 0)",
+          "popover-foreground": "oklch(0.141 0.005 285.823)",
+          "primary": "oklch(0.511 0.262 276.966)",
+          "primary-foreground": "oklch(0.985 0 0)",
+          "secondary": "oklch(0.967 0.001 286.375)",
+          "secondary-foreground": "oklch(0.21 0.006 285.885)",
+          "muted": "oklch(0.967 0.001 286.375)",
+          "muted-foreground": "oklch(0.5 0.016 285.938)",
+          "accent": "oklch(0.967 0.001 286.375)",
+          "accent-foreground": "oklch(0.21 0.006 285.885)",
+          "destructive": "oklch(0.55 0.22 27.3)",
+          "success": "oklch(0.52 0.13 155)",
+          "warning": "oklch(0.53 0.12 62)",
+          "info": "oklch(0.53 0.17 250)",
+          "border": "oklch(0.92 0.004 286.32)",
+          "input": "oklch(0.88 0.006 286.286)",
+          "ring": "oklch(0.585 0.233 277.117)",
+          "chart-1": "oklch(0.585 0.233 277.117)",
+          "chart-2": "oklch(0.785 0.115 274.713)",
+          "chart-3": "oklch(0.705 0.015 286.067)",
+          "chart-4": "oklch(0.7 0.12 183)",
+          "chart-5": "oklch(0.77 0.15 70)",
+          "sidebar": "oklch(0.985 0.001 286.375)",
+          "sidebar-foreground": "oklch(0.21 0.006 285.885)",
+          "sidebar-primary": "oklch(0.511 0.262 276.966)",
+          "sidebar-primary-foreground": "oklch(0.985 0 0)",
+          "sidebar-accent": "oklch(0.94 0.004 286.32)",
+          "sidebar-accent-foreground": "oklch(0.141 0.005 285.823)",
+          "sidebar-border": "oklch(0.92 0.004 286.32)",
+          "sidebar-ring": "oklch(0.585 0.233 277.117)"
+        },
+        "dark": {
+          "background": "oklch(0.17 0.005 285.823)",
+          "foreground": "oklch(0.97 0.001 286.375)",
+          "card": "oklch(0.2 0.006 285.885)",
+          "card-foreground": "oklch(0.97 0.001 286.375)",
+          "popover": "oklch(0.21 0.006 285.885)",
+          "popover-foreground": "oklch(0.97 0.001 286.375)",
+          "primary": "oklch(0.72 0.15 276.935)",
+          "primary-foreground": "oklch(0.17 0.03 277)",
+          "secondary": "oklch(0.274 0.006 286.033)",
+          "secondary-foreground": "oklch(0.97 0.001 286.375)",
+          "muted": "oklch(0.274 0.006 286.033)",
+          "muted-foreground": "oklch(0.72 0.015 286.067)",
+          "accent": "oklch(0.274 0.006 286.033)",
+          "accent-foreground": "oklch(0.97 0.001 286.375)",
+          "destructive": "oklch(0.77 0.15 22)",
+          "success": "oklch(0.76 0.14 155)",
+          "warning": "oklch(0.8 0.14 75)",
+          "info": "oklch(0.75 0.12 245)",
+          "border": "oklch(1 0 0 / 9%)",
+          "input": "oklch(1 0 0 / 14%)",
+          "ring": "oklch(0.673 0.182 276.935)",
+          "chart-1": "oklch(0.673 0.182 276.935)",
+          "chart-2": "oklch(0.45 0.16 277)",
+          "chart-3": "oklch(0.552 0.016 285.938)",
+          "chart-4": "oklch(0.7 0.12 183)",
+          "chart-5": "oklch(0.77 0.15 70)",
+          "sidebar": "oklch(0.141 0.005 285.823)",
+          "sidebar-foreground": "oklch(0.87 0.006 286.286)",
+          "sidebar-primary": "oklch(0.72 0.15 276.935)",
+          "sidebar-primary-foreground": "oklch(0.17 0.03 277)",
+          "sidebar-accent": "oklch(0.24 0.006 286.033)",
+          "sidebar-accent-foreground": "oklch(0.985 0 0)",
+          "sidebar-border": "oklch(1 0 0 / 8%)",
+          "sidebar-ring": "oklch(0.673 0.182 276.935)"
+        }
+      },
+      "css": {
+        "@layer base": {
+          "html": {
+            "font-feature-settings": "\"cv11\", \"ss03\""
+          },
+          "body": {
+            "@apply text-sm": {}
+          },
+          "td, th, [data-slot=\"kpi-value\"]": {
+            "font-variant-numeric": "tabular-nums"
+          }
+        }
+      }
+    },
+    {
+      "name": "shell",
+      "type": "registry:block",
+      "title": "App shell",
+      "description": "Inset sidebar that collapses to icons, workspace switcher, user menu with light/dark/system theme, header with breadcrumbs and Ctrl/Cmd+K command menu, page header. Replaces app/layout.tsx with Inter + Geist Mono, ThemeProvider (system default), TooltipProvider and Toaster.",
+      "dependencies": [
+        "next-themes"
+      ],
+      "registryDependencies": [
+        "sidebar",
+        "breadcrumb",
+        "dropdown-menu",
+        "avatar",
+        "command",
+        "separator",
+        "button",
+        "tooltip",
+        "sonner",
+        "@backoffice/theme"
+      ],
+      "files": [
+        {
+          "path": "src/components/shell/app-sidebar.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/shell/workspace-switcher.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/shell/nav-user.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/shell/site-header.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/shell/command-menu.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/shell/page-header.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/shell/theme-provider.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/hooks/use-mobile.ts",
+          "type": "registry:hook"
+        },
+        {
+          "path": "src/lib/nav.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/app/(app)/layout.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/layout.tsx"
+        },
+        {
+          "path": "src/app/layout.tsx",
+          "type": "registry:page",
+          "target": "app/layout.tsx"
+        }
+      ]
+    },
+    {
+      "name": "data-table",
+      "type": "registry:block",
+      "title": "Data table",
+      "description": "TanStack table with search, faceted filters with counts, sortable headers, row selection, density toggle, column visibility, pagination, loading skeleton and status badge.",
+      "dependencies": [
+        "@tanstack/react-table@^8"
+      ],
+      "registryDependencies": [
+        "table",
+        "checkbox",
+        "popover",
+        "command",
+        "dropdown-menu",
+        "toggle-group",
+        "skeleton",
+        "input",
+        "button",
+        "separator",
+        "@backoffice/theme"
+      ],
+      "files": [
+        {
+          "path": "src/components/data-table/data-table.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/data-table/column-header.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/data-table/faceted-filter.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/data-table/table-skeleton.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/status-badge.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "form-layout",
+      "type": "registry:block",
+      "title": "Form layout",
+      "description": "Settings-style form sections (title and help left, fields in a card right) and a sticky action bar.",
+      "registryDependencies": [
+        "field",
+        "input",
+        "select",
+        "textarea",
+        "switch",
+        "radio-group",
+        "button",
+        "@backoffice/theme"
+      ],
+      "files": [
+        {
+          "path": "src/components/forms/form-section.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "dashboard",
+      "type": "registry:block",
+      "title": "Dashboard pieces",
+      "description": "KPI card (delta with arrow, sign and text), inline sparkline, empty state.",
+      "registryDependencies": [
+        "card",
+        "@backoffice/theme"
+      ],
+      "files": [
+        {
+          "path": "src/components/dashboard/kpi-card.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/dashboard/sparkline.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/empty-state.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "examples",
+      "type": "registry:block",
+      "title": "Example pages",
+      "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings) with sample data. Install to start from a working back office.",
+      "registryDependencies": [
+        "chart",
+        "sheet",
+        "@backoffice/shell",
+        "@backoffice/data-table",
+        "@backoffice/form-layout",
+        "@backoffice/dashboard"
+      ],
+      "files": [
+        {
+          "path": "src/lib/data/orders.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/lib/data/metrics.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/components/dashboard/revenue-chart.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/dashboard/channel-chart.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/app/(app)/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/orders-table.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/orders-table.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/new/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/new/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/new/order-form.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/new/order-form.tsx"
+        },
+        {
+          "path": "src/app/(app)/customers/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/customers/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/settings/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/settings/page.tsx"
+        }
+      ]
+    }
+  ]
+}

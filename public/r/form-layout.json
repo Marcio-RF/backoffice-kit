@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "form-layout",
+  "title": "Form layout",
+  "description": "Settings-style form sections (title and help left, fields in a card right) and a sticky action bar.",
+  "registryDependencies": [
+    "field",
+    "input",
+    "select",
+    "textarea",
+    "switch",
+    "radio-group",
+    "button",
+    "@backoffice/theme"
+  ],
+  "files": [
+    {
+      "path": "src/components/forms/form-section.tsx",
+      "content": "import { cn } from \"@/lib/utils\"\r\n\r\n/** Settings-style section: title and help on the left, fields in a card on the right. */\r\nexport function FormSection({\r\n  title,\r\n  description,\r\n  children,\r\n  className,\r\n}: {\r\n  title: string\r\n  description?: string\r\n  children: React.ReactNode\r\n  className?: string\r\n}) {\r\n  const id = `section-${title.toLowerCase().replace(/\\W+/g, \"-\")}`\r\n  return (\r\n    <section aria-labelledby={id} className={cn(\"grid gap-4 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:gap-10\", className)}>\r\n      <div className=\"space-y-1\">\r\n        <h2 id={id} className=\"font-semibold\">\r\n          {title}\r\n        </h2>\r\n        {description ? <p className=\"text-muted-foreground\">{description}</p> : null}\r\n      </div>\r\n      <div className=\"rounded-xl border bg-card p-4 shadow-xs md:p-6\">{children}</div>\r\n    </section>\r\n  )\r\n}\r\n\r\n/** Sticky footer for primary form actions. */\r\nexport function FormActions({ children }: { children: React.ReactNode }) {\r\n  return (\r\n    <div className=\"sticky bottom-0 z-10 -mx-4 mt-2 flex items-center justify-end gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur md:-mx-6 md:px-6\">\r\n      {children}\r\n    </div>\r\n  )\r\n}\r\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:block"
+}
