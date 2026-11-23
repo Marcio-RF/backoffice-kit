@@ -27,7 +27,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { type Order, currency, dateTime, orders, statusMeta } from "@/lib/data/orders"
+import { type Order, currency, dateTime, statusMeta } from "@/lib/data/orders"
+
+import { fetchOrdersPage } from "./actions"
 
 const copyOrderId = (order: Order) => navigator.clipboard?.writeText(order.id)
 const cancelOrder = (order: Order) =>
@@ -62,7 +64,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
         <Checkbox
           checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
           onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
-          aria-label="Select all on this page"
+          aria-label="Select all loaded"
         />
       ),
       cell: ({ row }) => (
@@ -166,6 +168,12 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
 const statusOptions = Object.entries(statusMeta).map(([value, m]) => ({ value, label: m.label }))
 const channelOptions = ["Website", "Partner", "Phone"].map((v) => ({ value: v, label: v }))
 
+const count = new Intl.NumberFormat("en-US")
+const ordersLabels = {
+  total: (loaded: number, total: number) =>
+    `${count.format(loaded)} of ${count.format(total)} ${total === 1 ? "order" : "orders"}`,
+}
+
 export function OrdersTable() {
   const [current, setCurrent] = React.useState<Order | null>(null)
   const columns = React.useMemo(() => buildColumns(setCurrent), [])
@@ -175,8 +183,9 @@ export function OrdersTable() {
       <DataTable
         label="Orders"
         columns={columns}
-        data={orders}
+        fetchPage={fetchOrdersPage}
         onRowClick={setCurrent}
+        labels={ordersLabels}
         toolbar={(table, density, setDensity) => (
           <DataTableToolbar
             table={table}

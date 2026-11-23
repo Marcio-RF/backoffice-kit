@@ -11,14 +11,13 @@ test.describe("Labels on the fixtures page (Portuguese)", () => {
     await expect(page.getByRole("heading", { name: "Fixtures de Rótulos" })).toBeVisible()
   })
 
-  test("pagination range is shown in Portuguese", async ({ page }) => {
-    await expect(people(page).getByRole("status")).toHaveText("1–3 de 8")
-    await expect(people(page).getByRole("button", { name: "Página anterior" })).toBeVisible()
+  test("the total on top is shown in Portuguese", async ({ page }) => {
+    await expect(people(page).getByRole("status")).toHaveText("8 de 8 pessoas")
   })
 
   test("selected count is shown in Portuguese", async ({ page }) => {
     await people(page).getByRole("checkbox", { name: "Selecionar Ana" }).check()
-    await expect(people(page).getByRole("status")).toContainText("1 de 8 selecionados")
+    await expect(people(page).getByRole("status")).toContainText("1 selecionados")
   })
 
   test("empty state is shown in Portuguese", async ({ page }) => {
@@ -26,7 +25,18 @@ test.describe("Labels on the fixtures page (Portuguese)", () => {
     await expect(people(page).getByRole("cell", { name: "Sem resultados." })).toBeVisible()
   })
 
-  test("labels that are not overridden keep their English defaults", async ({ page }) => {
-    await expect(people(page).getByRole("button", { name: "Next page" })).toBeVisible()
+  test("a failed page shows the error in Portuguese, and the label left undefined keeps its default", async ({ page }) => {
+    const region = page.getByRole("region", { name: "Registos" })
+    await region.scrollIntoViewIfNeeded()
+    await expect(region.getByRole("status")).toHaveText("40 de 300 registos")
+    // Scroll until the third page is requested; it fails once.
+    await expect
+      .poll(async () => {
+        await page.mouse.wheel(0, 2000)
+        return region.getByText("Não foi possível carregar mais.").filter({ visible: true }).isVisible()
+      })
+      .toBe(true)
+    await region.getByRole("button", { name: "Retry" }).click()
+    await expect(region.getByRole("status")).toHaveText(/^(120|160|200|240|280|300) de 300 registos$/)
   })
 })

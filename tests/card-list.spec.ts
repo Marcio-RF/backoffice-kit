@@ -47,16 +47,6 @@ test.describe("Orders at 375px shows the card list", () => {
     await expect(page.getByRole("dialog")).toContainText(id)
   })
 
-  test("pagination works over the cards", async ({ page }) => {
-    await page.goto("/orders")
-    const items = page.getByRole("list", { name: "Orders" }).getByRole("listitem")
-    await expect(items).toHaveCount(15)
-    const first = await items.first().innerText()
-    await page.getByRole("button", { name: "Next page" }).click()
-    await expect(page.getByRole("status")).toContainText("16–30 of 64")
-    expect(await items.first().innerText()).not.toBe(first)
-  })
-
   test("search filters the cards", async ({ page }) => {
     await page.goto("/orders")
     await page.getByRole("searchbox", { name: "Search orders" }).fill("zzzz")

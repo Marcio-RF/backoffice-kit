@@ -48,7 +48,7 @@ export const defaultDataTableToolbarLabels: DataTableToolbarLabels = {
   filtersButton: (active) => (active > 0 ? `Filters (${active})` : "Filters"),
   reset: "Reset",
   clear: "Clear",
-  showResults: (count) => `View ${count} ${count === 1 ? "result" : "results"}`,
+  showResults: (count) => `View ${count.toLocaleString("en-US")} ${count === 1 ? "result" : "results"}`,
   sortBy: "Sort by",
   ascending: "Ascending",
   descending: "Descending",
@@ -78,6 +78,29 @@ type DataTableToolbarProps<TData> = {
   labels?: Partial<DataTableToolbarLabels>
   /** Partial overrides for the filter chips. */
   filterLabels?: Partial<FacetedFilterLabels>
+}
+
+const searchDelay = 300
+
+/** The search box text, applied to the table's global filter 300ms after the last keystroke. */
+function useDebouncedSearch<TData>(table: Table<TData>) {
+  const applied = (table.getState().globalFilter as string | undefined) ?? ""
+  const [text, setText] = React.useState(applied)
+  const [lastApplied, setLastApplied] = React.useState(applied)
+  const timer = React.useRef<ReturnType<typeof setTimeout>>(undefined)
+  // The filter changed from outside (Reset, the URL): show it.
+  if (applied !== lastApplied) {
+    setLastApplied(applied)
+    setText(applied)
+  }
+  React.useEffect(() => () => clearTimeout(timer.current), [])
+  const update = (value: string, { now = false }: { now?: boolean } = {}) => {
+    setText(value)
+    clearTimeout(timer.current)
+    if (now) table.setGlobalFilter(value)
+    else timer.current = setTimeout(() => table.setGlobalFilter(value), searchDelay)
+  }
+  return [text, update] as const
 }
 
 /** Title of a column in menus: `meta.title`, else a plain-string header, else the id. */
@@ -110,7 +133,8 @@ export function DataTableToolbar<TData>({
       : table.getAllLeafColumns().filter((c) => c.accessorFn && c.getCanSort())
   ).filter((c): c is Column<TData, unknown> => !!c)
   const sort = state.sorting[0]
-  const results = table.getFilteredRowModel().rows.length
+  const results = table.options.meta?.total ?? table.getFilteredRowModel().rows.length
+  const [searchText, setSearchText] = useDebouncedSearch(table)
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -123,8 +147,8 @@ export function DataTableToolbar<TData>({
           type="search"
           aria-label={search.label}
           placeholder={search.placeholder}
-          value={(state.globalFilter as string) ?? ""}
-          onChange={(e) => table.setGlobalFilter(e.target.value)}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
           className="w-full pl-8 md:w-56 lg:w-72"
         />
       </div>
@@ -215,7 +239,7 @@ export function DataTableToolbar<TData>({
             variant="ghost"
             onClick={() => {
               table.resetColumnFilters()
-              table.setGlobalFilter("")
+              setSearchText("", { now: true })
             }}
           >
             {t.reset}
@@ -284,7 +308,9 @@ function FacetSection<TData>({ filter, column }: { filter: FacetFilter; column?:
         <Label key={o.value} className="gap-3 py-2">
           <Checkbox checked={selected.has(o.value)} onCheckedChange={(v) => toggle(o.value, v === true)} />
           <span className="flex-1">{o.label}</span>
-          <span className="font-mono text-xs text-muted-foreground tabular-nums">{facets?.get(o.value) ?? 0}</span>
+          {facets?.size ? (
+            <span className="font-mono text-xs text-muted-foreground tabular-nums">{facets.get(o.value) ?? 0}</span>
+          ) : null}
         </Label>
       ))}
     </fieldset>

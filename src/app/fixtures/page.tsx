@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { FixtureTable, FixtureTableWithoutSlots } from "./fixture-table"
+import { FixtureServerTable, FixtureTable, FixtureTableWithoutSlots } from "./fixture-table"
 
 // Test-only page: not in the navigation and not in registry.json.
 export const metadata: Metadata = { title: "Fixtures", robots: { index: false } }
@@ -11,6 +11,7 @@ export default function FixturesPage() {
       <h1 className="text-xl font-semibold">Fixtures de Rótulos</h1>
       <FixtureTable />
       <FixtureTableWithoutSlots />
+      <FixtureServerTable />
     </main>
   )
 }
