@@ -151,3 +151,62 @@ test.describe("Dialog roteado at 1280px", () => {
     await expect(page.getByRole("dialog")).toBeHidden()
   })
 })
+
+test.describe("Navigating inside the Dialog roteado", () => {
+  test("Order → Customer swaps the content in the same frame; ← goes back one step, × to the list", async ({ page }) => {
+    await openCard(page)
+    const dialog = page.getByRole("dialog")
+    const orderTitle = await dialog.getByRole("heading", { level: 2 }).innerText()
+    await dialog.getByRole("link", { name: orderTitle }).click()
+    await expect(page).toHaveURL(/\/customers\//)
+    await expect(dialog.getByText("Recent orders")).toBeVisible()
+    await expect(page.getByRole("dialog")).toHaveCount(1)
+    await dialog.getByRole("button", { name: "Back" }).click()
+    await expect(page).toHaveURL(/\/orders\/ORD-/)
+    await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(orderTitle)
+
+    await dialog.getByRole("link", { name: orderTitle }).click()
+    await expect(page).toHaveURL(/\/customers\//)
+    await dialog.getByRole("link", { name: /ORD-/ }).nth(1).click()
+    await expect(page).toHaveURL(/\/orders\/ORD-/)
+    await expect(dialog.getByRole("button", { name: "Back" })).toBeVisible()
+    await dialog.getByRole("button", { name: "Close" }).click()
+    await expect(dialog).toBeHidden()
+    await expect(page).toHaveURL(/\/orders$/)
+  })
+
+  test("the browser's back goes one step back inside the dialog", async ({ page }) => {
+    await openCard(page)
+    const dialog = page.getByRole("dialog")
+    const orderTitle = await dialog.getByRole("heading", { level: 2 }).innerText()
+    await dialog.getByRole("link", { name: orderTitle }).click()
+    await expect(page).toHaveURL(/\/customers\//)
+    await page.goBack()
+    await expect(page).toHaveURL(/\/orders\/ORD-/)
+    await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(orderTitle)
+    await expect(dialog.getByRole("button", { name: "Back" })).toBeHidden()
+  })
+
+  test("a customer opened directly is a full page", async ({ page }) => {
+    await page.goto("/customers/ana.devries")
+    await expect(page.getByRole("dialog")).toBeHidden()
+    await expect(page.getByRole("heading", { level: 1, name: "Ana de Vries" })).toBeVisible()
+  })
+})
+
+test.describe("A Fluxo móvel in the Dialog roteado", () => {
+  test("Quick order opens over the list with its own bar, and its back closes the dialog", async ({ page }) => {
+    await page.goto("/orders")
+    await page.getByRole("link", { name: "Quick order" }).click()
+    const dialog = page.getByRole("dialog")
+    await expect(dialog).toBeVisible()
+    await expect(page).toHaveURL(/\/quick-order$/)
+    await expect(dialog.getByRole("heading", { level: 1, name: "Choose customer" })).toBeFocused()
+    await expect(dialog.getByRole("button", { name: "Close" })).toHaveCount(0)
+    const box = await dialog.evaluate((el) => el.getBoundingClientRect().height)
+    expect(box).toBeCloseTo(812, 0)
+    await dialog.getByRole("button", { name: "Back" }).click()
+    await expect(dialog).toBeHidden()
+    await expect(page).toHaveURL(/\/orders$/)
+  })
+})

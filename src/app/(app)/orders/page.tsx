@@ -1,4 +1,4 @@
-import { Download, Plus } from "lucide-react"
+import { Download, Plus, Zap } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
@@ -22,6 +22,12 @@ export default function OrdersPage() {
             <Button variant="outline">
               <Download aria-hidden />
               Export
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/quick-order">
+                <Zap aria-hidden />
+                Quick order
+              </Link>
             </Button>
             <Button asChild>
               <Link href="/orders/new">

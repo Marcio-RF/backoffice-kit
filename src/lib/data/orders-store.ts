@@ -77,3 +77,20 @@ export function deleteOrder(id: string) {
   const index = store.findIndex((o) => o.id === id)
   if (index >= 0) store.splice(index, 1)
 }
+
+/** A customer of the example: whoever placed orders with the same email. */
+export function customerSlug(order: Pick<Order, "email">) {
+  return order.email.split("@")[0]
+}
+
+export function findCustomer(slug: string) {
+  const orders = store.filter((o) => customerSlug(o) === slug)
+  if (!orders.length) return undefined
+  return {
+    slug,
+    name: orders[0].customer,
+    email: orders[0].email,
+    orders: [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    total: orders.filter((o) => o.status !== "cancelled").reduce((sum, o) => sum + o.amount, 0),
+  }
+}

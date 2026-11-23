@@ -85,6 +85,13 @@ export function useRoutedDialogDirty(dirty: boolean) {
 }
 
 const desktopQuery = "(min-width: 768px)"
+
+/** Index of the current history entry, where the Navigation API exists. */
+function navigationIndex(): number | null {
+  const nav = (window as Window & { navigation?: { currentEntry?: { index: number } | null } }).navigation
+  const index = nav?.currentEntry?.index
+  return typeof index === "number" && index >= 0 ? index : null
+}
 const editable =
   "input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled]), [data-slot='select-trigger']:not([disabled])"
 
@@ -126,24 +133,25 @@ function Host({
   if (!open && origin !== null) setOrigin(null)
   const originNow = open ? (origin ?? pathname) : null
 
-  // Paths visited inside the dialog, to know how far back the list is.
+  // How many history entries the dialog is deep, to know how far back the list is. The Navigation API
+  // gives the entry index; without it, the visited paths are a good guess.
   const [steps, setSteps] = React.useState<string[]>([])
-  const popped = React.useRef(false)
+  const openIndex = React.useRef<number | null>(null)
   React.useEffect(() => {
-    const onPop = () => {
-      popped.current = true
-    }
-    window.addEventListener("popstate", onPop)
-    return () => window.removeEventListener("popstate", onPop)
-  }, [])
-  React.useEffect(() => {
-    const wasPop = popped.current
-    popped.current = false
+    const index = navigationIndex()
     setSteps((s) => {
-      if (!open) return []
+      if (!open) {
+        openIndex.current = null
+        return []
+      }
+      if (index !== null) {
+        openIndex.current ??= index
+        const depth = Math.max(1, index - openIndex.current + 1)
+        return Array.from({ length: depth }, (_, i) => (i === depth - 1 ? pathname : (s[i] ?? "")))
+      }
       if (!s.length) return [pathname]
       if (s[s.length - 1] === pathname) return s
-      if (wasPop && s[s.length - 2] === pathname) return s.slice(0, -1)
+      if (s[s.length - 2] === pathname) return s.slice(0, -1)
       return [...s, pathname]
     })
   }, [open, pathname])
@@ -473,6 +481,7 @@ export function RoutedDialog({
       const field = root.querySelector<HTMLElement>(editable)
       const title = root.querySelector<HTMLElement>(`[id="${titleId}"], [data-slot='mobile-flow'] h1`)
       const target = field ?? title
+      if (target && !field && !target.hasAttribute("tabindex")) target.tabIndex = -1
       target?.focus({ preventScroll: true })
       return !!target
     }

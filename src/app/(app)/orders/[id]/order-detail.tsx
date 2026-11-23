@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import {
@@ -10,7 +11,7 @@ import {
 import { StatusBadge } from "@/components/status-badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { currency, dateTime, statusMeta } from "@/lib/data/orders"
-import { findOrder } from "@/lib/data/orders-store"
+import { customerSlug, findOrder } from "@/lib/data/orders-store"
 
 import { OrderActions } from "./order-actions"
 
@@ -30,9 +31,18 @@ export async function OrderDetail({ params }: { params: Promise<{ id: string }> 
         </div>
       </RoutedDialogHeader>
       <RoutedDialogBody>
-        <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 px-4">
+        <dl className="grid grid-cols-[8rem_1fr] items-baseline gap-x-4 gap-y-3 px-4">
           <dt className="text-muted-foreground">Amount</dt>
           <dd className="font-medium tabular-nums">{currency.format(order.amount)}</dd>
+          <dt className="text-muted-foreground">Customer</dt>
+          <dd className="min-w-0">
+            <Link
+              href={`/customers/${customerSlug(order)}`}
+              className="inline-flex min-h-11 items-center font-medium underline-offset-4 hover:underline md:min-h-0"
+            >
+              {order.customer}
+            </Link>
+          </dd>
           <dt className="text-muted-foreground">Email</dt>
           <dd className="truncate">{order.email}</dd>
           <dt className="text-muted-foreground">Channel</dt>
