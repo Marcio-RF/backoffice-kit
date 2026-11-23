@@ -23,6 +23,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
 
+import { type ListPosition, listCacheKey, saveList, takeList } from "@/components/data-table/list-cache"
 import { useUrlListQuery } from "@/components/data-table/list-query"
 import {
   type FetchItem,
@@ -30,6 +31,7 @@ import {
   type ItemMark,
   type ListQuery,
   applyItemUpdate,
+  queryKey,
   useInfiniteList,
 } from "@/components/data-table/list-source"
 import { subscribeItemUpdates } from "@/components/data-table/list-updates"
@@ -230,7 +232,7 @@ function useVirtualRows(
     after: Math.max(0, after),
     last: items.length ? items[items.length - 1].index : -1,
     measure: virtualizer.measureElement,
-    scrollToIndex: (index: number) => virtualizer.scrollToIndex(index, { align: "auto" }),
+    scrollToIndex: (index: number, align: "auto" | "start" = "auto") => virtualizer.scrollToIndex(index, { align }),
   }
 }
 
@@ -243,7 +245,16 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
     [columns],
   )
   const [query, setQuery] = useUrlListQuery(columnIds)
-  const list = useInfiniteList(props.fetchPage, query)
+  const pathname = usePathname()
+  const [listPath] = React.useState(pathname)
+  // Coming back to a list left a moment ago (the sidebar, a link): its pages, marks and position.
+  const [restored] = React.useState(() => (server ? takeList<TData>(listCacheKey(listPath, query)) : undefined))
+  const list = useInfiniteList(props.fetchPage, query, restored?.state ?? undefined, (key) => {
+    // The same list shown again for another query (the router reuses a hidden page): from the cache if kept.
+    const entry = takeList<TData>(`${listPath}?${key}`)
+    if (entry?.position) queueMicrotask(() => setPending(entry.position))
+    return entry?.state
+  })
 
   // A record changed elsewhere (a dialog, an action): fetch it again and update it in place.
   const resource = props.fetchPage ? props.resource : undefined
@@ -365,9 +376,7 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
   }, [shownKey])
 
   // The record a Dialog roteado was opened from gives up its transition name to the dialog while it is open.
-  const pathname = usePathname()
   const router = useRouter()
-  const [listPath] = React.useState(pathname)
   const [origin, setOrigin] = React.useState<string | null>(null)
   if (pathname === listPath && origin !== null) setOrigin(null)
   if (pathname !== listPath && origin === null) setOrigin(pathname)
@@ -412,6 +421,106 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
     else onRowClick?.(row.original)
   }
   const clickable = !!getRowHref || !!onRowClick
+
+  // Where the list is on screen, kept up to date while scrolling, to restore it later.
+  const position = React.useRef<ListPosition | null>(restored?.position ?? null)
+  React.useEffect(() => {
+    if (!server || isDesktop === null) return
+    const container = isDesktop ? bodyRef.current : cardsRef.current
+    let frame = 0
+    const update = () => {
+      for (const el of container?.querySelectorAll<HTMLElement>(":scope > [data-index]") ?? []) {
+        const box = el.getBoundingClientRect()
+        if (box.bottom > 0) {
+          position.current = { index: Number(el.dataset.index), offset: box.top }
+          return
+        }
+      }
+    }
+    const onScroll = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(update)
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener("scroll", onScroll)
+    }
+  }, [server, isDesktop])
+
+  // Leaving the screen: into the session cache, under the query it shows.
+  const saveRef = React.useRef<() => void>(() => {})
+  const hiddenKey = React.useRef<string | null>(null)
+  React.useLayoutEffect(() => {
+    saveRef.current = () => {
+      hiddenKey.current = list.key
+      if (!server || list.status === "loading" || !list.key) return
+      const { items, marks, nextCursor, total, facets, key } = list
+      saveList<TData>(`${listPath}?${key}`, {
+        state: { items, marks, nextCursor, total, facets, key, status: "idle" },
+        position: position.current,
+        resource,
+        query,
+        fetchItem,
+        idOf: (item) => (getRowId ? getRowId(item) : defaultRowId(item, -1)),
+      })
+    }
+  })
+  // The router can keep a page it leaves hidden, with its state, and show it again: the effects run again
+  // but nothing mounts. Then the list takes its cache entry back like a fresh mount would, or starts over
+  // when the entry is gone (too old, or one of more than five lists).
+  const shown = React.useRef(false)
+  const showAgainRef = React.useRef<() => void>(() => {})
+  React.useLayoutEffect(() => {
+    showAgainRef.current = () => {
+      // Shown again for another query: the change of query already took it from the cache, or fetches it.
+      if (!server || hiddenKey.current !== queryKey(query)) return
+      const entry = takeList<TData>(listCacheKey(listPath, query))
+      if (entry?.state) {
+        setListState(entry.state)
+        setPending(entry.position)
+      } else if (entry?.position) {
+        list.reload()
+        setPending(entry.position)
+      } else {
+        list.reload()
+        window.scrollTo({ top: 0 })
+      }
+    }
+  })
+  React.useEffect(() => {
+    if (shown.current) queueMicrotask(() => showAgainRef.current())
+    shown.current = true
+    return () => saveRef.current()
+  }, [])
+
+  // Back from the cache: scroll to the record that was first on screen, loading pages up to it if needed.
+  const [pending, setPending] = React.useState<ListPosition | null>(restored?.position ?? null)
+  React.useEffect(() => {
+    if (!pending || isDesktop === null || !server) return
+    if (loaded <= pending.index) {
+      if (list.status === "idle" && list.nextCursor) fetchNext()
+      else if (list.status === "idle") queueMicrotask(() => setPending(null))
+      return
+    }
+    if (!visibleRef.current.scrollToIndex) return
+    // The router scrolls a new page to the top right after it mounts: restore after that.
+    let correct: ReturnType<typeof setTimeout> | undefined
+    const start = setTimeout(() => {
+      visibleRef.current.scrollToIndex?.(pending.index, "start")
+      // Once the virtualizer has placed it, put the record exactly where it was on screen.
+      correct = setTimeout(() => {
+        const container = isDesktop ? bodyRef.current : cardsRef.current
+        const el = container?.querySelector<HTMLElement>(`:scope > [data-index="${pending.index}"]`)
+        if (el) window.scrollBy(0, el.getBoundingClientRect().top - pending.offset)
+        setPending(null)
+      }, 120)
+    }, 80)
+    return () => {
+      clearTimeout(start)
+      clearTimeout(correct)
+    }
+  }, [pending, isDesktop, server, loaded, list.status, list.nextCursor, fetchNext])
 
   const busy = status === "refreshing" || status === "loading"
   const tail =

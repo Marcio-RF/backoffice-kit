@@ -73,6 +73,8 @@ export function useInfiniteList<TData>(
   fetchPage: FetchPage<TData> | undefined,
   query: ListQuery,
   initial?: InfiniteListState<TData>,
+  /** Pages kept for a query key (the list cache), used instead of fetching when the key changes. */
+  restore?: (key: string) => InfiniteListState<TData> | null | undefined,
 ) {
   const key = queryKey(query)
   const [state, setState] = React.useState<InfiniteListState<TData>>(
@@ -84,10 +86,12 @@ export function useInfiniteList<TData>(
   const queryRef = React.useRef(query)
   const fetchRef = React.useRef(fetchPage)
   const stateRef = React.useRef(state)
+  const restoreRef = React.useRef(restore)
   React.useLayoutEffect(() => {
     queryRef.current = query
     fetchRef.current = fetchPage
     stateRef.current = state
+    restoreRef.current = restore
   })
 
   const load = React.useCallback((cursor: string | null, forKey: string) => {
@@ -121,6 +125,12 @@ export function useInfiniteList<TData>(
   // A new query (or the first render without data for it) starts over from the first page.
   React.useEffect(() => {
     if (!fetchRef.current || state.key === key) return
+    const cached = restoreRef.current?.(key)
+    if (cached) {
+      token.current++
+      setState(cached)
+      return
+    }
     load(null, key)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, load])
@@ -139,7 +149,13 @@ export function useInfiniteList<TData>(
     load(s.key === key && s.items.length ? s.nextCursor : null, key)
   }, [key, load])
 
-  return { ...state, fetchNext, retry, setState }
+  /** Starts over from the first page, dropping what is loaded. */
+  const reload = React.useCallback(() => {
+    setState((s) => ({ ...s, items: [], marks: {}, nextCursor: null, total: 0, facets: undefined }))
+    load(null, key)
+  }, [key, load])
+
+  return { ...state, fetchNext, retry, reload, setState }
 }
 
 /**

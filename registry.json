@@ -211,7 +211,7 @@
       "name": "data-table",
       "type": "registry:block",
       "title": "Data table",
-      "description": "TanStack table with infinite scroll by cursor and virtualized rows, total on top, search, faceted filters with counts, sortable headers, row selection, density toggle, column visibility, card list on the Celular, loading skeleton and status badge.",
+      "description": "TanStack table with infinite scroll by cursor and virtualized rows, total on top, list restoration from a session cache, in-place updates of changed records, search, faceted filters with counts, sortable headers, row selection, density toggle, column visibility, card list on the Celular, loading skeleton and status badge.",
       "dependencies": [
         "@tanstack/react-table@^8",
         "@tanstack/react-virtual@^3"
@@ -247,6 +247,10 @@
         },
         {
           "path": "src/components/data-table/list-updates.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/components/data-table/list-cache.ts",
           "type": "registry:lib"
         },
         {

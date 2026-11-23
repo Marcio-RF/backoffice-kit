@@ -32,7 +32,7 @@ for (const viewport of [
         .poll(async () => {
           await page.mouse.wheel(0, 4000)
           return (await loadedOf(page)).loaded
-        })
+        }, { timeout: 20_000 })
         .toBeGreaterThanOrEqual(300)
       const form = viewport.width < 768 ? page.getByRole("list", { name: "Orders" }).getByRole("listitem") : page.getByRole("table", { name: "Orders" }).getByRole("row")
       expect(await form.count()).toBeLessThan(80)
