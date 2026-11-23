@@ -333,7 +333,8 @@ function RoutedDialogFrame({ origin, children }: { origin: string; children: Rea
     }
   }, [])
 
-  React.useEffect(() => {
+  // Layout effects: the dialog answers Esc and swipes from its first frame on screen.
+  React.useLayoutEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return
       const target = e.target instanceof Element ? e.target : null
@@ -429,7 +430,7 @@ async function goBackAnimated(steps: number, closing: boolean, origin: string | 
 
 /** On the Celular: drag the header, or the body when it is scrolled to the top, down to close. */
 function useSwipeDown(ref: React.RefObject<HTMLDivElement | null>, onClose: () => void) {
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const panel = ref.current
     if (!panel) return
     let startY = 0

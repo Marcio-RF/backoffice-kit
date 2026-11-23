@@ -75,4 +75,18 @@ test.describe("Only the changed record is updated, at 375px", () => {
     await expect(row).toContainText("Deleted")
     await expect(row.getByRole("link")).toHaveCount(0)
   })
+
+  test("saving goes back to the Detail, which shows the change", async ({ page }) => {
+    await page.goto("/orders")
+    await expect(page.getByRole("status")).toHaveText(/^50 of [\d,]+ orders$/)
+    await page.getByRole("list", { name: "Orders" }).getByRole("link").nth(1).click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByRole("link", { name: "Edit" }).click()
+    await expect(page.getByLabel("Full name")).toBeFocused()
+    await page.getByLabel("Amount (€)").fill("1234.5")
+    await dialog.getByRole("button", { name: "Save changes" }).click()
+    await expect(page).toHaveURL(/\/orders\/ORD-\d+$/)
+    await expect(dialog).toContainText("€1,234.50")
+    await expect(page.getByRole("dialog", { name: "Discard changes?" })).toBeHidden()
+  })
 })

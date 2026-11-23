@@ -55,6 +55,14 @@ for (const scheme of schemes) {
         await shot(page, "mobile-new-order", scheme)
       })
 
+      test(`mobile-edit-order-${scheme}`, async ({ page }) => {
+        await page.goto("/orders")
+        await page.getByRole("list", { name: "Orders" }).getByRole("link").first().click()
+        await page.getByRole("dialog").getByRole("link", { name: "Edit" }).click()
+        await expect(page.getByLabel("Full name")).toBeFocused()
+        await shot(page, "mobile-edit-order", scheme)
+      })
+
       test(`mobile-quick-order-${scheme}`, async ({ page }) => {
         await page.goto("/quick-order")
         await expect(page.getByRole("heading", { level: 1, name: "Choose customer" })).toBeVisible()
@@ -77,12 +85,22 @@ for (const scheme of schemes) {
         await shot(page, "orders", scheme)
       })
 
-      // The README shows the form in light and the Detail in dark only.
+      // The README shows the form and the edit dialog in light, and the Detail in dark only.
       test(`new-order-${scheme}`, async ({ page }) => {
         test.skip(scheme === "dark", "not published")
         await page.goto("/orders/new")
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
         await shot(page, "new-order", scheme)
+      })
+
+      test(`orders-dialog-${scheme}`, async ({ page }) => {
+        test.skip(scheme === "dark", "not published")
+        await page.goto("/orders")
+        await page.getByRole("table", { name: "Orders" }).getByRole("row").nth(1).click()
+        await expect(page.getByRole("dialog")).toBeVisible()
+        await page.getByRole("dialog").getByRole("link", { name: "Edit" }).click()
+        await expect(page.getByLabel("Full name")).toBeFocused()
+        await shot(page, "orders-dialog", scheme)
       })
 
       test(`order-sheet-${scheme}`, async ({ page }) => {

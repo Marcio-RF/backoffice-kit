@@ -43,15 +43,6 @@ test.describe("Forms in the Dialog roteado at 375px", () => {
     await expect(dialog.getByRole("button", { name: "Copy order ID" })).toBeVisible()
   })
 
-  test("saving goes back to the Detail, which shows the change", async ({ page }) => {
-    const dialog = await openEdit(page)
-    await page.getByLabel("Amount (€)").fill("1234.5")
-    await dialog.getByRole("button", { name: "Save changes" }).click()
-    await expect(page).toHaveURL(/\/orders\/ORD-\d+$/)
-    await expect(dialog).toContainText("€1,234.50")
-    await expect(page.getByRole("dialog", { name: "Discard changes?" })).toBeHidden()
-  })
-
   test("check:mobile inside the form: 44px targets, 16px fields, no sideways scroll, footer at the bottom", async ({
     page,
   }) => {
