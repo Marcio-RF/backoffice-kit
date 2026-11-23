@@ -24,7 +24,16 @@ import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
 
 import { useUrlListQuery } from "@/components/data-table/list-query"
-import { type FetchPage, type ListQuery, useInfiniteList } from "@/components/data-table/list-source"
+import {
+  type FetchItem,
+  type FetchPage,
+  type ItemMark,
+  type ListQuery,
+  applyItemUpdate,
+  useInfiniteList,
+} from "@/components/data-table/list-source"
+import { subscribeItemUpdates } from "@/components/data-table/list-updates"
+import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -67,6 +76,10 @@ export type DataTableLabels = {
   /** Shown at the end of the list when a page fails to load. */
   loadError: string
   retry: string
+  /** Marks on records changed since their page loaded (see `markItemChanged`). */
+  markNew: string
+  markStale: string
+  markDeleted: string
 }
 
 const count = new Intl.NumberFormat("en-US")
@@ -77,6 +90,9 @@ export const defaultDataTableLabels: DataTableLabels = {
   selected: (selected) => `${count.format(selected)} selected`,
   loadError: "Couldn't load more.",
   retry: "Retry",
+  markNew: "New",
+  markStale: "Doesn't match filters",
+  markDeleted: "Deleted",
 }
 
 type CommonProps<TData> = {
@@ -108,6 +124,10 @@ type ServerProps<TData> = {
   data?: never
   /** Loads one page at a time by cursor; search, filters and sort run on the server. */
   fetchPage: FetchPage<TData>
+  /** Name shared with `markItemChanged(resource, id)`, e.g. `"orders"`. */
+  resource?: string
+  /** Fetches one record again after `markItemChanged`, to update it in place. */
+  fetchItem?: FetchItem<TData>
 }
 
 export type DataTableProps<TData> = CommonProps<TData> & (LocalProps<TData> | ServerProps<TData>)
@@ -225,6 +245,27 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
   const [query, setQuery] = useUrlListQuery(columnIds)
   const list = useInfiniteList(props.fetchPage, query)
 
+  // A record changed elsewhere (a dialog, an action): fetch it again and update it in place.
+  const resource = props.fetchPage ? props.resource : undefined
+  const fetchItem = props.fetchPage ? props.fetchItem : undefined
+  const queryRef = React.useRef(query)
+  React.useLayoutEffect(() => {
+    queryRef.current = query
+  })
+  const { setState: setListState } = list
+  React.useEffect(() => {
+    if (!resource || !fetchItem) return
+    const idOf = (item: TData) => (getRowId ? getRowId(item) : defaultRowId(item, -1))
+    return subscribeItemUpdates(async (updates) => {
+      for (const update of updates) {
+        if (update.resource !== resource) continue
+        const result = await fetchItem(update.id, queryRef.current).catch(() => undefined)
+        if (result === undefined) continue
+        setListState((s) => applyItemUpdate(s, update, result, idOf))
+      }
+    })
+  }, [resource, fetchItem, getRowId, setListState])
+
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [density, setDensity] = React.useState<Density>("comfortable")
@@ -284,6 +325,10 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
       )
     }
   }, [hasSlots, label])
+
+  const titleColumnId = visibleColumns.find((c) => c.columnDef.meta?.mobile === "title")?.id ?? fallbackTitleId
+  const marks = server ? list.marks : {}
+  const markLabel: Record<ItemMark, string> = { new: t.markNew, stale: t.markStale, deleted: t.markDeleted }
 
   const slotOf = (cell: Cell<TData, unknown>): CardSlot | undefined =>
     cell.column.columnDef.meta?.mobile ?? (cell.column.id === fallbackTitleId ? "title" : undefined)
@@ -419,9 +464,11 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
               measure={cards.measure}
               cells={row.getVisibleCells()}
               slotOf={slotOf}
-              href={hrefOf(row)}
+              mark={marks[row.id]}
+              markLabel={markLabel}
+              href={marks[row.id] === "deleted" ? undefined : hrefOf(row)}
               isOrigin={hrefOf(row) === origin}
-              onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+              onClick={onRowClick && marks[row.id] !== "deleted" ? () => onRowClick(row.original) : undefined}
             />
           )
         })}
@@ -483,7 +530,10 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
                   measure={tableRows.measure}
                   href={hrefOf(row)}
                   isOrigin={hrefOf(row) === origin}
-                  onClick={clickable ? () => activate(row) : undefined}
+                  mark={marks[row.id]}
+                  markLabel={markLabel}
+                  titleColumnId={titleColumnId}
+                  onClick={clickable && marks[row.id] !== "deleted" ? () => activate(row) : undefined}
                 />
               )
             })}
@@ -542,12 +592,32 @@ function Zoom({ href, isOrigin, children }: { href?: string; isOrigin: boolean; 
 // Links, checkboxes and menus inside a row do their own thing.
 const interactive = "a, button, input, select, textarea, label, [role='checkbox'], [role='menuitem']"
 
+const markTone = { new: "info", stale: "warning", deleted: "danger" } as const
+
+/** The mark of a changed record, next to its title. */
+function RowMark({ mark, label }: { mark: ItemMark; label: Record<ItemMark, string> }) {
+  return (
+    <span data-slot="row-mark" className="inline-block no-underline">
+      <StatusBadge tone={markTone[mark]}>{label[mark]}</StatusBadge>
+    </span>
+  )
+}
+
+const markRow: Record<ItemMark, string> = {
+  new: "",
+  stale: "bg-muted/60",
+  deleted: "bg-muted/60 text-muted-foreground line-through",
+}
+
 function DataRow<TData>({
   row,
   index,
   measure,
   href,
   isOrigin,
+  mark,
+  markLabel,
+  titleColumnId,
   onClick,
 }: {
   row: Row<TData>
@@ -555,6 +625,9 @@ function DataRow<TData>({
   measure?: (el: Element | null) => void
   href?: string
   isOrigin: boolean
+  mark?: ItemMark
+  markLabel: Record<ItemMark, string>
+  titleColumnId?: string
   onClick?: () => void
 }) {
   return (
@@ -564,6 +637,7 @@ function DataRow<TData>({
         data-index={index}
         aria-rowindex={index + 2}
         data-state={row.getIsSelected() ? "selected" : undefined}
+        data-mark={mark}
         onClick={
           onClick
             ? (e) => {
@@ -571,14 +645,21 @@ function DataRow<TData>({
               }
             : undefined
         }
-        className={cn(onClick && "cursor-pointer")}
+        className={cn(onClick && "cursor-pointer", mark && markRow[mark])}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell
             key={cell.id}
             className="h-10 py-1.5 group-data-[density=compact]/table:h-8 group-data-[density=compact]/table:py-0.5"
           >
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            {mark && cell.column.id === titleColumnId ? (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <div className="min-w-0">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+                <RowMark mark={mark} label={markLabel} />
+              </div>
+            ) : (
+              flexRender(cell.column.columnDef.cell, cell.getContext())
+            )}
           </TableCell>
         ))}
       </TableRow>
@@ -625,6 +706,8 @@ function DataCard<TData>({
   setSize,
   measure,
   slotOf,
+  mark,
+  markLabel,
   href,
   isOrigin,
   onClick,
@@ -634,6 +717,8 @@ function DataCard<TData>({
   setSize: number
   measure?: (el: Element | null) => void
   slotOf: (cell: Cell<TData, unknown>) => CardSlot | undefined
+  mark?: ItemMark
+  markLabel: Record<ItemMark, string>
   href?: string
   isOrigin: boolean
   onClick?: () => void
@@ -656,7 +741,8 @@ function DataCard<TData>({
       data-index={index}
       aria-setsize={setSize}
       aria-posinset={index + 1}
-      className="border-b last:border-b-0"
+      data-mark={mark}
+      className={cn("border-b last:border-b-0", mark && markRow[mark])}
     >
       <CardCellContext.Provider value>
         <CardWrapper
@@ -671,6 +757,12 @@ function DataCard<TData>({
               {title ? (
                 <span id={titleId} data-slot="card-title" className="min-w-0 font-medium">
                   {title}
+                  {mark ? (
+                    <>
+                      {" "}
+                      <RowMark mark={mark} label={markLabel} />
+                    </>
+                  ) : null}
                 </span>
               ) : (
                 <span />

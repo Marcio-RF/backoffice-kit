@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { ColumnHeader } from "@/components/data-table/column-header"
 import { DataTable, useIsCardCell } from "@/components/data-table/data-table"
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
+import { markItemChanged } from "@/components/data-table/list-updates"
 import { multiValueFilter } from "@/components/data-table/faceted-filter"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
@@ -23,11 +24,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { type Order, currency, dateTime, statusMeta } from "@/lib/data/orders"
 
-import { fetchOrdersPage } from "./actions"
+import { fetchOrder, fetchOrdersPage, removeOrder } from "./actions"
 
 const copyOrderId = (order: Order) => navigator.clipboard?.writeText(order.id)
-const cancelOrder = (order: Order) =>
-  toast.success(`${order.id} cancelled`, { description: "The customer was notified." })
+const deleteOrder = async (order: Order) => {
+  await removeOrder(order.id)
+  toast.success(`${order.id} deleted`)
+  // No dialog open: the row is fetched again at once and stays, marked as deleted.
+  markItemChanged("orders", order.id)
+}
 
 export const orderHref = (order: Order) => `/orders/${order.id}`
 
@@ -146,9 +151,9 @@ function buildColumns(open: (o: Order) => void, edit: (o: Order) => void): Colum
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onSelect={() => cancelOrder(row.original)}
+                onSelect={() => deleteOrder(row.original)}
               >
-                Cancel order
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -184,6 +189,8 @@ export function OrdersTable() {
         label="Orders"
         columns={columns}
         fetchPage={fetchOrdersPage}
+        resource="orders"
+        fetchItem={fetchOrder}
         getRowHref={orderHref}
         labels={ordersLabels}
         toolbar={(table, density, setDensity) => (

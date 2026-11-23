@@ -43,7 +43,7 @@ test.describe("Dialog roteado at 375px", () => {
     await openCard(page)
     const dialog = page.getByRole("dialog")
     await expect(dialog.getByRole("button", { name: "Copy order ID" })).toBeVisible()
-    await expect(dialog.getByRole("button", { name: "Cancel order" })).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "Delete" })).toBeVisible()
   })
 
   test("check:mobile: touch targets are 44px and nothing scrolls sideways with the dialog open", async ({ page }) => {

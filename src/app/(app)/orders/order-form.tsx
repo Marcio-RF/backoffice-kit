@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import * as React from "react"
 import { toast } from "sonner"
 
+import { markItemChanged, markItemCreated } from "@/components/data-table/list-updates"
 import { FormSection } from "@/components/forms/form-section"
 import {
   RoutedDialogBody,
@@ -92,6 +93,9 @@ export function OrderForm({ order }: { order?: Order }) {
     setPending(false)
     if (!saved) return
     setDirty(false)
+    // The list behind fetches this order again when the dialog closes.
+    if (editing) markItemChanged("orders", saved.id)
+    else markItemCreated("orders", saved.id)
     toast.success(editing ? `${saved.id} saved` : "Order created", {
       description: editing ? undefined : `${saved.id} was added to the queue.`,
     })

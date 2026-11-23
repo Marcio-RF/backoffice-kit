@@ -34,10 +34,15 @@ export function writeListQuery(params: URLSearchParams, query: ListQuery, column
   return next
 }
 
-/** The list's query, read from and written to the URL with `router.replace` (no new history entries). */
+/**
+ * The list's query, read from and written to the URL with `router.replace` (no new history entries).
+ * Only the list's own path counts: while a Dialog roteado is open the URL is the dialog's, and the list
+ * keeps its query.
+ */
 export function useUrlListQuery(columnIds: readonly string[]) {
   const router = useRouter()
   const pathname = usePathname()
+  const [listPath] = React.useState(pathname)
   const searchParams = useSearchParams()
   const idsKey = columnIds.join("|")
   const fromUrl = React.useMemo(
@@ -50,7 +55,7 @@ export function useUrlListQuery(columnIds: readonly string[]) {
   const [seen, setSeen] = React.useState(queryKey(fromUrl))
   const [pending, setPending] = React.useState<string[]>([])
   const urlKey = queryKey(fromUrl)
-  if (urlKey !== seen) {
+  if (pathname === listPath && urlKey !== seen) {
     setSeen(urlKey)
     const mine = pending.indexOf(urlKey)
     if (mine >= 0) {
@@ -76,9 +81,9 @@ export function useUrlListQuery(columnIds: readonly string[]) {
       setLocal(next)
       setPending((p) => [...p, queryKey(next)])
       const params = writeListQuery(new URLSearchParams(window.location.search), next, idsKey.split("|")).toString()
-      router.replace(params ? `${pathname}?${params}` : pathname, { scroll: false })
+      router.replace(params ? `${listPath}?${params}` : listPath, { scroll: false })
     },
-    [router, pathname, idsKey],
+    [router, listPath, idsKey],
   )
 
   return [query, setQuery] as const

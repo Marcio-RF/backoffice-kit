@@ -48,8 +48,15 @@ export type ListStatus =
   | "error"
   | "idle"
 
+/**
+ * How a record changed since its page loaded: created here (`new`), edited so it no longer matches the
+ * query (`stale`), or `deleted`. Marks stay until the next search, filter or sort.
+ */
+export type ItemMark = "new" | "stale" | "deleted"
+
 export type InfiniteListState<TData> = {
   items: TData[]
+  marks: Record<string, ItemMark>
   nextCursor: string | null
   total: number
   facets?: ListFacets
@@ -69,7 +76,8 @@ export function useInfiniteList<TData>(
 ) {
   const key = queryKey(query)
   const [state, setState] = React.useState<InfiniteListState<TData>>(
-    () => initial ?? { items: [], nextCursor: null, total: 0, status: fetchPage ? "loading" : "idle", key: "" },
+    () =>
+      initial ?? { items: [], marks: {}, nextCursor: null, total: 0, status: fetchPage ? "loading" : "idle", key: "" },
   )
   // Every request carries a token; a response whose token is stale is dropped.
   const token = React.useRef(0)
@@ -95,6 +103,7 @@ export function useInfiniteList<TData>(
         if (mine !== token.current) return
         setState((s) => ({
           items: cursor ? [...s.items, ...page.items] : page.items,
+          marks: cursor ? s.marks : {},
           nextCursor: page.nextCursor,
           total: page.total,
           facets: page.facets ?? (cursor ? s.facets : undefined),
@@ -131,4 +140,33 @@ export function useInfiniteList<TData>(
   }, [key, load])
 
   return { ...state, fetchNext, retry, setState }
+}
+
+/**
+ * Applies a record fetched again to the loaded pages: replaced in place (marked `stale` when it no
+ * longer matches), marked `deleted` when gone, or added on top as `new` when created and matching.
+ */
+export function applyItemUpdate<TData>(
+  state: InfiniteListState<TData>,
+  update: { id: string; kind: "changed" | "created" },
+  result: { item: TData; matches: boolean } | null,
+  idOf: (item: TData) => string,
+): InfiniteListState<TData> {
+  const index = state.items.findIndex((item) => idOf(item) === update.id)
+  const marks = { ...state.marks }
+  if (update.kind === "created") {
+    if (!result || !result.matches || index >= 0) return state
+    marks[update.id] = "new"
+    return { ...state, items: [result.item, ...state.items], total: state.total + 1, marks }
+  }
+  if (index < 0) return state
+  if (!result) {
+    marks[update.id] = "deleted"
+    return { ...state, marks }
+  }
+  const items = state.items.slice()
+  items[index] = result.item
+  if (!result.matches) marks[update.id] = "stale"
+  else if (marks[update.id] !== "new") delete marks[update.id]
+  return { ...state, items, marks }
 }

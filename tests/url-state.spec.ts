@@ -37,6 +37,18 @@ test.describe("Orders keeps its query in the URL", () => {
     await expect(page.getByRole("columnheader", { name: /Amount/ })).toHaveAttribute("aria-sort", dir)
   })
 
+  test("opening a record from a filtered list keeps the list filtered", async ({ page }) => {
+    await page.goto("/orders?status=completed")
+    await expect.poll(() => totalOf(page)).toBeLessThan(2000)
+    const filtered = await totalOf(page)
+    await page.getByRole("table", { name: "Orders" }).getByRole("row").nth(2).click()
+    await expect(page.getByRole("dialog")).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("dialog")).toBeHidden()
+    await expect(page).toHaveURL(/[?&]status=completed/)
+    expect(await totalOf(page)).toBe(filtered)
+  })
+
   test("typing in the search adds no history entries", async ({ page }) => {
     await page.goto("/customers")
     await page.goto("/orders")

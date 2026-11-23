@@ -168,27 +168,32 @@ function Host({
   const [dirty, setDirtyState] = React.useState(false)
   const guarded = React.useRef(false)
   const [asking, setAsking] = React.useState<null | { then: () => void; restoreGuard: boolean }>(null)
-  const setDirty = React.useCallback((value: boolean) => setDirtyState(value), [])
+  // Read through a ref too: an Esc right after typing must already see the form as changed.
+  const dirtyRef = React.useRef(false)
+  const setDirty = React.useCallback((value: boolean) => {
+    dirtyRef.current = value
+    setDirtyState(value)
+  }, [])
 
   const router = useRouter()
   const leave = React.useCallback(
     (stepsBack: number, refresh = false) => {
       const extra = guarded.current ? 1 : 0
       guarded.current = false
-      setDirtyState(false)
+      setDirty(false)
       void goBackAnimated(stepsBack + extra, stepsBack >= depth, originNow).then(() => {
         if (refresh) router.refresh()
       })
     },
-    [depth, originNow, router],
+    [depth, originNow, router, setDirty],
   )
 
   const guard = React.useCallback(
     (then: () => void, force?: boolean) => {
-      if (dirty && !force) setAsking({ then, restoreGuard: false })
+      if (dirtyRef.current && !force) setAsking({ then, restoreGuard: false })
       else then()
     },
-    [dirty],
+    [],
   )
 
   const back = React.useCallback(
@@ -230,9 +235,9 @@ function Host({
     if (!open) {
       guarded.current = false
       // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when the route closes the dialog
-      setDirtyState(false)
+      setDirty(false)
     }
-  }, [open])
+  }, [open, setDirty])
 
   const titleId = React.useId()
   const frame = React.useMemo<Frame>(
@@ -292,7 +297,7 @@ function Host({
               onClick={() => {
                 const then = asking?.then
                 setAsking(null)
-                setDirtyState(false)
+                setDirty(false)
                 then?.()
               }}
             >
