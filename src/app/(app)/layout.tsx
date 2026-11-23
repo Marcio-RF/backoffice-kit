@@ -5,7 +5,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 // The shell stays static (prerendered). Reading the sidebar cookie here would make every
 // route dynamic under cacheComponents, so the sidebar always starts open.
-export default function AppLayout({ children }: LayoutProps<"/">) {
+// `modal` is the slot where intercepted routes open as a Dialog roteado over the page.
+export default function AppLayout({ children, modal }: LayoutProps<"/">) {
   return (
     <SidebarProvider>
       <SkipLink />
@@ -16,6 +17,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           {children}
         </div>
       </SidebarInset>
+      {modal}
     </SidebarProvider>
   )
 }

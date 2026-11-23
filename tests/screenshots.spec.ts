@@ -44,8 +44,8 @@ for (const scheme of schemes) {
 
       test(`mobile-detail-${scheme}`, async ({ page }) => {
         await page.goto("/orders")
-        await page.getByRole("list", { name: "Orders" }).getByRole("button").first().click()
-        await expect(page.getByRole("dialog")).toHaveCSS("opacity", "1")
+        await page.getByRole("list", { name: "Orders" }).getByRole("link").first().click()
+        await expect(page.getByRole("dialog")).toBeVisible()
         await shot(page, "mobile-detail", scheme)
       })
 
@@ -89,7 +89,7 @@ for (const scheme of schemes) {
         test.skip(scheme === "light", "not published")
         await page.goto("/orders")
         await page.getByRole("table", { name: "Orders" }).getByRole("row").nth(1).click()
-        await expect(page.getByRole("dialog")).toHaveCSS("opacity", "1")
+        await expect(page.getByRole("dialog")).toBeVisible()
         await shot(page, "order-sheet", scheme)
       })
     })

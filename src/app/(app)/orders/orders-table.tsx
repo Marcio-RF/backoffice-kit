@@ -2,19 +2,13 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import * as React from "react"
 import { toast } from "sonner"
 
 import { ColumnHeader } from "@/components/data-table/column-header"
 import { DataTable, useIsCardCell } from "@/components/data-table/data-table"
-import {
-  DetailSheet,
-  DetailSheetBody,
-  DetailSheetDescription,
-  DetailSheetFooter,
-  DetailSheetHeader,
-  DetailSheetTitle,
-} from "@/components/data-table/detail-sheet"
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
 import { multiValueFilter } from "@/components/data-table/faceted-filter"
 import { StatusBadge } from "@/components/status-badge"
@@ -35,23 +29,21 @@ const copyOrderId = (order: Order) => navigator.clipboard?.writeText(order.id)
 const cancelOrder = (order: Order) =>
   toast.success(`${order.id} cancelled`, { description: "The customer was notified." })
 
-function OrderLink({ order, open }: { order: Order; open: (o: Order) => void }) {
-  // Inside a card the whole card is the button, so the ID is plain text there.
+export const orderHref = (order: Order) => `/orders/${order.id}`
+
+function OrderLink({ order }: { order: Order }) {
+  // Inside a card the whole card is the link, so the ID is plain text there.
   const inCard = useIsCardCell()
   const className = "rounded font-mono text-xs font-medium"
   if (inCard) return <span className={className}>{order.id}</span>
   return (
-    <button
-      type="button"
+    <Link
+      href={orderHref(order)}
       data-slot="row-link"
-      onClick={(e) => {
-        e.stopPropagation()
-        open(order)
-      }}
-      className={`${className} hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
+      className={`${className} inline-flex items-center hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
     >
       {order.id}
-    </button>
+    </Link>
   )
 }
 
@@ -82,7 +74,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
       accessorKey: "id",
       header: ({ column }) => <ColumnHeader column={column} title="Order" />,
       meta: { mobile: "subtitle", title: "Order" },
-      cell: ({ row }) => <OrderLink order={row.original} open={open} />,
+      cell: ({ row }) => <OrderLink order={row.original} />,
       enableHiding: false,
     },
     {
@@ -175,8 +167,8 @@ const ordersLabels = {
 }
 
 export function OrdersTable() {
-  const [current, setCurrent] = React.useState<Order | null>(null)
-  const columns = React.useMemo(() => buildColumns(setCurrent), [])
+  const router = useRouter()
+  const columns = React.useMemo(() => buildColumns((o) => router.push(orderHref(o))), [router])
 
   return (
     <>
@@ -184,7 +176,7 @@ export function OrdersTable() {
         label="Orders"
         columns={columns}
         fetchPage={fetchOrdersPage}
-        onRowClick={setCurrent}
+        getRowHref={orderHref}
         labels={ordersLabels}
         toolbar={(table, density, setDensity) => (
           <DataTableToolbar
@@ -199,53 +191,6 @@ export function OrdersTable() {
           />
         )}
       />
-      <OrderSheet order={current} onOpenChange={(o) => !o && setCurrent(null)} />
     </>
-  )
-}
-
-function OrderSheet({ order, onOpenChange }: { order: Order | null; onOpenChange: (open: boolean) => void }) {
-  const m = order ? statusMeta[order.status] : null
-  return (
-    <DetailSheet open={!!order} onOpenChange={onOpenChange}>
-      {order && m ? (
-        <>
-          <DetailSheetHeader>
-            <DetailSheetDescription className="font-mono text-xs">{order.id}</DetailSheetDescription>
-            <DetailSheetTitle className="text-lg">{order.customer}</DetailSheetTitle>
-            <div>
-              <StatusBadge tone={m.tone}>{m.label}</StatusBadge>
-            </div>
-          </DetailSheetHeader>
-          <DetailSheetBody>
-            <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 px-4">
-              <dt className="text-muted-foreground">Amount</dt>
-              <dd className="font-medium tabular-nums">{currency.format(order.amount)}</dd>
-              <dt className="text-muted-foreground">Email</dt>
-              <dd className="truncate">{order.email}</dd>
-              <dt className="text-muted-foreground">Channel</dt>
-              <dd>{order.channel}</dd>
-              <dt className="text-muted-foreground">Created</dt>
-              <dd className="tabular-nums">{dateTime.format(new Date(order.createdAt))}</dd>
-            </dl>
-          </DetailSheetBody>
-          <DetailSheetFooter>
-            <Button variant="outline" onClick={() => copyOrderId(order)}>
-              Copy order ID
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                cancelOrder(order)
-                onOpenChange(false)
-              }}
-            >
-              Cancel order
-            </Button>
-            <Button onClick={() => toast.success(`${order.id} confirmed`)}>Confirm order</Button>
-          </DetailSheetFooter>
-        </>
-      ) : null}
-    </DetailSheet>
   )
 }

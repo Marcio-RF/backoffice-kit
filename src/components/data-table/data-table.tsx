@@ -19,6 +19,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { useWindowVirtualizer } from "@tanstack/react-virtual"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
 
 import { useUrlListQuery } from "@/components/data-table/list-query"
@@ -27,6 +29,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { mergeLabels } from "@/lib/labels"
+import { type RoutedDialogEventDetail, routedDialogEvent, routedTransitionName } from "@/lib/routed"
 import { cn } from "@/lib/utils"
 
 export type Density = "comfortable" | "compact"
@@ -81,6 +84,12 @@ type CommonProps<TData> = {
   /** Accessible name for the table. */
   label: string
   toolbar?: (table: TanTable<TData>, density: Density, setDensity: (d: Density) => void) => React.ReactNode
+  /**
+   * Makes each record a link, for a Dialog roteado: the card is the link, and the row is clickable.
+   * The dialog zooms out of the row or card whose href it was opened at.
+   */
+  getRowHref?: (row: TData) => string
+  /** For lists without routes; `getRowHref` wins when both are given. */
   onRowClick?: (row: TData) => void
   /** Stable id of a record. Defaults to its `id` field, else its index. */
   getRowId?: (row: TData) => string
@@ -190,7 +199,7 @@ function useVirtualRows(
 
   if (on === null) {
     const items = Array.from({ length: Math.min(count, unhydratedRows) }, (_, index) => ({ index }))
-    return { items, before: 0, after: 0, last: -1, measure: undefined }
+    return { items, before: 0, after: 0, last: -1, measure: undefined, scrollToIndex: undefined }
   }
   const items = on ? virtualizer.getVirtualItems() : []
   const before = items.length ? items[0].start - margin : 0
@@ -201,11 +210,12 @@ function useVirtualRows(
     after: Math.max(0, after),
     last: items.length ? items[items.length - 1].index : -1,
     measure: virtualizer.measureElement,
+    scrollToIndex: (index: number) => virtualizer.scrollToIndex(index, { align: "auto" }),
   }
 }
 
 export function DataTable<TData>(props: DataTableProps<TData>) {
-  const { columns, label, toolbar, onRowClick, getRowId, emptyState, labels } = props
+  const { columns, label, toolbar, getRowHref, onRowClick, getRowId, emptyState, labels } = props
   const t = mergeLabels(defaultDataTableLabels, labels)
   const server = !!props.fetchPage
   const columnIds = React.useMemo(
@@ -309,6 +319,55 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
     if (window.scrollY > top) window.scrollTo({ top })
   }, [shownKey])
 
+  // The record a Dialog roteado was opened from gives up its transition name to the dialog while it is open.
+  const pathname = usePathname()
+  const router = useRouter()
+  const [listPath] = React.useState(pathname)
+  const [origin, setOrigin] = React.useState<string | null>(null)
+  if (pathname === listPath && origin !== null) setOrigin(null)
+  if (pathname !== listPath && origin === null) setOrigin(pathname)
+
+  // On close, the record it came from gets the focus back (scrolled into view if needed).
+  const rowsRef = React.useRef(rows)
+  const visibleRef = React.useRef(visible)
+  React.useLayoutEffect(() => {
+    rowsRef.current = rows
+    visibleRef.current = visible
+  })
+  React.useEffect(() => {
+    if (!getRowHref) return
+    const onDialog = (e: Event) => {
+      const { type, origin: href } = (e as CustomEvent<RoutedDialogEventDetail>).detail
+      if (type !== "close") return
+      const index = rowsRef.current.findIndex((r) => getRowHref(r.original) === href)
+      if (index < 0) return
+      const container = window.matchMedia(desktopQuery).matches ? bodyRef.current : cardsRef.current
+      const focus = () => {
+        const link = Array.from(container?.querySelectorAll<HTMLElement>("a[href]") ?? []).find(
+          (a) => a.getAttribute("href") === href,
+        )
+        if (!link) return false
+        link.focus({ preventScroll: true })
+        const box = link.getBoundingClientRect()
+        if (box.top < 0 || box.bottom > window.innerHeight) link.scrollIntoView({ block: "center" })
+        return true
+      }
+      if (focus()) return
+      visibleRef.current.scrollToIndex?.(index)
+      requestAnimationFrame(() => requestAnimationFrame(focus))
+    }
+    window.addEventListener(routedDialogEvent, onDialog)
+    return () => window.removeEventListener(routedDialogEvent, onDialog)
+  }, [getRowHref])
+
+  const hrefOf = (row: Row<TData>) => (getRowHref ? getRowHref(row.original) : undefined)
+  const activate = (row: Row<TData>) => {
+    const href = hrefOf(row)
+    if (href) router.push(href)
+    else onRowClick?.(row.original)
+  }
+  const clickable = !!getRowHref || !!onRowClick
+
   const busy = status === "refreshing" || status === "loading"
   const tail =
     status === "loading" || status === "loading-more"
@@ -360,6 +419,8 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
               measure={cards.measure}
               cells={row.getVisibleCells()}
               slotOf={slotOf}
+              href={hrefOf(row)}
+              isOrigin={hrefOf(row) === origin}
               onClick={onRowClick ? () => onRowClick(row.original) : undefined}
             />
           )
@@ -420,7 +481,9 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
                   row={row}
                   index={index}
                   measure={tableRows.measure}
-                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  href={hrefOf(row)}
+                  isOrigin={hrefOf(row) === origin}
+                  onClick={clickable ? () => activate(row) : undefined}
                 />
               )
             })}
@@ -463,36 +526,97 @@ function Spacer({ height, colSpan }: { height: number; colSpan: number }) {
   )
 }
 
+/**
+ * Wraps a row or card in a View Transition named after its href. While the dialog opened from it is
+ * on screen the wrapper is gone: React pairs a removed name with an added one, which is the zoom.
+ */
+function Zoom({ href, isOrigin, children }: { href?: string; isOrigin: boolean; children: React.ReactElement }) {
+  if (!href || isOrigin) return children
+  return (
+    <React.ViewTransition name={routedTransitionName(href)} share="routed-zoom" default="none">
+      {children}
+    </React.ViewTransition>
+  )
+}
+
+// Links, checkboxes and menus inside a row do their own thing.
+const interactive = "a, button, input, select, textarea, label, [role='checkbox'], [role='menuitem']"
+
 function DataRow<TData>({
   row,
   index,
   measure,
+  href,
+  isOrigin,
   onClick,
 }: {
   row: Row<TData>
   index: number
   measure?: (el: Element | null) => void
+  href?: string
+  isOrigin: boolean
   onClick?: () => void
 }) {
   return (
-    <TableRow
-      ref={measure}
-      data-index={index}
-      aria-rowindex={index + 2}
-      data-state={row.getIsSelected() ? "selected" : undefined}
-      onClick={onClick}
-      className={cn(onClick && "cursor-pointer")}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell
-          key={cell.id}
-          className="h-10 py-1.5 group-data-[density=compact]/table:h-8 group-data-[density=compact]/table:py-0.5"
-        >
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
-      ))}
-    </TableRow>
+    <Zoom href={href} isOrigin={isOrigin}>
+      <TableRow
+        ref={measure}
+        data-index={index}
+        aria-rowindex={index + 2}
+        data-state={row.getIsSelected() ? "selected" : undefined}
+        onClick={
+          onClick
+            ? (e) => {
+                if (!(e.target as HTMLElement).closest(interactive)) onClick()
+              }
+            : undefined
+        }
+        className={cn(onClick && "cursor-pointer")}
+      >
+        {row.getVisibleCells().map((cell) => (
+          <TableCell
+            key={cell.id}
+            className="h-10 py-1.5 group-data-[density=compact]/table:h-8 group-data-[density=compact]/table:py-0.5"
+          >
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </TableCell>
+        ))}
+      </TableRow>
+    </Zoom>
   )
+}
+
+/** The card is a link (with `getRowHref`), a button (with `onRowClick`), or plain content. */
+function CardWrapper({
+  href,
+  isOrigin,
+  onClick,
+  labelledBy,
+  className,
+  children,
+}: {
+  href?: string
+  isOrigin: boolean
+  onClick?: () => void
+  labelledBy?: string
+  className: string
+  children: React.ReactNode
+}) {
+  if (href)
+    return (
+      <Zoom href={href} isOrigin={isOrigin}>
+        <Link href={href} aria-labelledby={labelledBy} className={className}>
+          {children}
+        </Link>
+      </Zoom>
+    )
+  if (onClick)
+    return (
+      <button type="button" onClick={onClick} aria-labelledby={labelledBy} className={className}>
+        {children}
+      </button>
+    )
+  return <div className={className}>{children}</div>
 }
 
 function DataCard<TData>({
@@ -501,6 +625,8 @@ function DataCard<TData>({
   setSize,
   measure,
   slotOf,
+  href,
+  isOrigin,
   onClick,
 }: {
   cells: Cell<TData, unknown>[]
@@ -508,6 +634,8 @@ function DataCard<TData>({
   setSize: number
   measure?: (el: Element | null) => void
   slotOf: (cell: Cell<TData, unknown>) => CardSlot | undefined
+  href?: string
+  isOrigin: boolean
   onClick?: () => void
 }) {
   const titleId = React.useId()
@@ -521,8 +649,6 @@ function DataCard<TData>({
   const status = slot("status")
   const subtitle = slot("subtitle")
   const value = slot("value")
-  // Without `onRowClick` the card is plain content, not a dead button.
-  const Wrapper = onClick ? "button" : "div"
 
   return (
     <li
@@ -533,8 +659,11 @@ function DataCard<TData>({
       className="border-b last:border-b-0"
     >
       <CardCellContext.Provider value>
-        <Wrapper
-          {...(onClick ? { type: "button" as const, onClick, "aria-labelledby": title ? titleId : undefined } : {})}
+        <CardWrapper
+          href={href}
+          isOrigin={isOrigin}
+          onClick={onClick}
+          labelledBy={title ? titleId : undefined}
           className="flex min-h-11 w-full flex-col gap-1 px-4 py-3 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         >
           {title || status ? (
@@ -569,7 +698,7 @@ function DataCard<TData>({
               ) : null}
             </span>
           ) : null}
-        </Wrapper>
+        </CardWrapper>
       </CardCellContext.Provider>
     </li>
   )

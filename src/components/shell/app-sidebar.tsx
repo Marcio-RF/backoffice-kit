@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Suspense } from "react"
 
 import { type NavUserLabels, NavUser } from "@/components/shell/nav-user"
 import { type WorkspaceSwitcherLabels, WorkspaceSwitcher } from "@/components/shell/workspace-switcher"
@@ -41,11 +42,27 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`)
 }
 
+type NavItem = (typeof navigation)[number]["items"][number]
+
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  return (
+    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+      <Link href={item.href} aria-current={active ? "page" : undefined}>
+        <item.icon aria-hidden />
+        <span>{item.title}</span>
+      </Link>
+    </SidebarMenuButton>
+  )
+}
+
+function ActiveNavLink({ item }: { item: NavItem }) {
+  return <NavLink item={item} active={isActive(usePathname(), item.href)} />
+}
+
 export function AppSidebar({
   labels,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { labels?: Partial<AppSidebarLabels> }) {
-  const pathname = usePathname()
   const t = mergeLabels(defaultAppSidebarLabels, labels)
 
   return (
@@ -59,22 +76,17 @@ export function AppSidebar({
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map((item) => {
-                  const active = isActive(pathname, item.href)
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-                        <Link href={item.href} aria-current={active ? "page" : undefined}>
-                          <item.icon aria-hidden />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                      {item.badge ? (
-                        <SidebarMenuBadge aria-label={t.pending(item.badge)}>{item.badge}</SidebarMenuBadge>
-                      ) : null}
-                    </SidebarMenuItem>
-                  )
-                })}
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    {/* The active item is known only at request time; the shell prerenders without it. */}
+                    <Suspense fallback={<NavLink item={item} active={false} />}>
+                      <ActiveNavLink item={item} />
+                    </Suspense>
+                    {item.badge ? (
+                      <SidebarMenuBadge aria-label={t.pending(item.badge)}>{item.badge}</SidebarMenuBadge>
+                    ) : null}
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

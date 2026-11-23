@@ -207,3 +207,21 @@
     transform: translate(-50%, -50%);
   }
 }
+
+/* Dialog roteado: the row or card zooms into the dialog and back; content inside crossfades. */
+::view-transition-group(.routed-zoom) {
+  animation-duration: 250ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+::view-transition-group(.routed-fade),
+::view-transition-old(.routed-fade),
+::view-transition-new(.routed-fade) {
+  animation-duration: 150ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
