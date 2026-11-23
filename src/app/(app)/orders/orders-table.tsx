@@ -2,20 +2,15 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import * as React from "react"
 import { toast } from "sonner"
 
 import { ColumnHeader } from "@/components/data-table/column-header"
 import { DataTable, useIsCardCell } from "@/components/data-table/data-table"
-import {
-  DetailSheet,
-  DetailSheetBody,
-  DetailSheetDescription,
-  DetailSheetFooter,
-  DetailSheetHeader,
-  DetailSheetTitle,
-} from "@/components/data-table/detail-sheet"
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"
+import { markItemChanged } from "@/components/data-table/list-updates"
 import { multiValueFilter } from "@/components/data-table/faceted-filter"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
@@ -27,33 +22,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { type Order, currency, dateTime, orders, statusMeta } from "@/lib/data/orders"
+import { type Order, currency, dateTime, statusMeta } from "@/lib/data/orders"
+
+import { fetchOrder, fetchOrdersPage, removeOrder } from "./actions"
 
 const copyOrderId = (order: Order) => navigator.clipboard?.writeText(order.id)
-const cancelOrder = (order: Order) =>
-  toast.success(`${order.id} cancelled`, { description: "The customer was notified." })
+const deleteOrder = async (order: Order) => {
+  await removeOrder(order.id)
+  toast.success(`${order.id} deleted`)
+  // No dialog open: the row is fetched again at once and stays, marked as deleted.
+  markItemChanged("orders", order.id)
+}
 
-function OrderLink({ order, open }: { order: Order; open: (o: Order) => void }) {
-  // Inside a card the whole card is the button, so the ID is plain text there.
+export const orderHref = (order: Order) => `/orders/${order.id}`
+
+function OrderLink({ order }: { order: Order }) {
+  // Inside a card the whole card is the link, so the ID is plain text there.
   const inCard = useIsCardCell()
   const className = "rounded font-mono text-xs font-medium"
   if (inCard) return <span className={className}>{order.id}</span>
   return (
-    <button
-      type="button"
+    <Link
+      href={orderHref(order)}
       data-slot="row-link"
-      onClick={(e) => {
-        e.stopPropagation()
-        open(order)
-      }}
-      className={`${className} hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
+      className={`${className} inline-flex items-center hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
     >
       {order.id}
-    </button>
+    </Link>
   )
 }
 
-function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
+function buildColumns(open: (o: Order) => void, edit: (o: Order) => void): ColumnDef<Order>[] {
   return [
     {
       id: "select",
@@ -62,7 +61,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
         <Checkbox
           checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
           onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
-          aria-label="Select all on this page"
+          aria-label="Select all loaded"
         />
       ),
       cell: ({ row }) => (
@@ -80,7 +79,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
       accessorKey: "id",
       header: ({ column }) => <ColumnHeader column={column} title="Order" />,
       meta: { mobile: "subtitle", title: "Order" },
-      cell: ({ row }) => <OrderLink order={row.original} open={open} />,
+      cell: ({ row }) => <OrderLink order={row.original} />,
       enableHiding: false,
     },
     {
@@ -145,15 +144,16 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem onSelect={() => open(row.original)}>View details</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => edit(row.original)}>Edit</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => copyOrderId(row.original)}>
                 Copy order ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onSelect={() => cancelOrder(row.original)}
+                onSelect={() => deleteOrder(row.original)}
               >
-                Cancel order
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -166,17 +166,33 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
 const statusOptions = Object.entries(statusMeta).map(([value, m]) => ({ value, label: m.label }))
 const channelOptions = ["Website", "Partner", "Phone"].map((v) => ({ value: v, label: v }))
 
+const count = new Intl.NumberFormat("en-US")
+const ordersLabels = {
+  total: (loaded: number, total: number) =>
+    `${count.format(loaded)} of ${count.format(total)} ${total === 1 ? "order" : "orders"}`,
+}
+
 export function OrdersTable() {
-  const [current, setCurrent] = React.useState<Order | null>(null)
-  const columns = React.useMemo(() => buildColumns(setCurrent), [])
+  const router = useRouter()
+  const columns = React.useMemo(
+    () =>
+      buildColumns(
+        (o) => router.push(orderHref(o)),
+        (o) => router.push(`${orderHref(o)}/edit`),
+      ),
+    [router],
+  )
 
   return (
     <>
       <DataTable
         label="Orders"
         columns={columns}
-        data={orders}
-        onRowClick={setCurrent}
+        fetchPage={fetchOrdersPage}
+        resource="orders"
+        fetchItem={fetchOrder}
+        getRowHref={orderHref}
+        labels={ordersLabels}
         toolbar={(table, density, setDensity) => (
           <DataTableToolbar
             table={table}
@@ -190,53 +206,6 @@ export function OrdersTable() {
           />
         )}
       />
-      <OrderSheet order={current} onOpenChange={(o) => !o && setCurrent(null)} />
     </>
-  )
-}
-
-function OrderSheet({ order, onOpenChange }: { order: Order | null; onOpenChange: (open: boolean) => void }) {
-  const m = order ? statusMeta[order.status] : null
-  return (
-    <DetailSheet open={!!order} onOpenChange={onOpenChange}>
-      {order && m ? (
-        <>
-          <DetailSheetHeader>
-            <DetailSheetDescription className="font-mono text-xs">{order.id}</DetailSheetDescription>
-            <DetailSheetTitle className="text-lg">{order.customer}</DetailSheetTitle>
-            <div>
-              <StatusBadge tone={m.tone}>{m.label}</StatusBadge>
-            </div>
-          </DetailSheetHeader>
-          <DetailSheetBody>
-            <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 px-4">
-              <dt className="text-muted-foreground">Amount</dt>
-              <dd className="font-medium tabular-nums">{currency.format(order.amount)}</dd>
-              <dt className="text-muted-foreground">Email</dt>
-              <dd className="truncate">{order.email}</dd>
-              <dt className="text-muted-foreground">Channel</dt>
-              <dd>{order.channel}</dd>
-              <dt className="text-muted-foreground">Created</dt>
-              <dd className="tabular-nums">{dateTime.format(new Date(order.createdAt))}</dd>
-            </dl>
-          </DetailSheetBody>
-          <DetailSheetFooter>
-            <Button variant="outline" onClick={() => copyOrderId(order)}>
-              Copy order ID
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                cancelOrder(order)
-                onOpenChange(false)
-              }}
-            >
-              Cancel order
-            </Button>
-            <Button onClick={() => toast.success(`${order.id} confirmed`)}>Confirm order</Button>
-          </DetailSheetFooter>
-        </>
-      ) : null}
-    </DetailSheet>
   )
 }

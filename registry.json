@@ -211,9 +211,10 @@
       "name": "data-table",
       "type": "registry:block",
       "title": "Data table",
-      "description": "TanStack table with search, faceted filters with counts, sortable headers, row selection, density toggle, column visibility, pagination, loading skeleton and status badge.",
+      "description": "TanStack table with infinite scroll by cursor and virtualized rows, total on top, list restoration from a session cache, in-place updates of changed records, search, faceted filters with counts, sortable headers, row selection, density toggle, column visibility, card list on the Celular, loading skeleton and status badge.",
       "dependencies": [
-        "@tanstack/react-table@^8"
+        "@tanstack/react-table@^8",
+        "@tanstack/react-virtual@^3"
       ],
       "registryDependencies": [
         "table",
@@ -237,6 +238,22 @@
           "type": "registry:component"
         },
         {
+          "path": "src/components/data-table/list-source.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/components/data-table/list-query.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/components/data-table/list-updates.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/components/data-table/list-cache.ts",
+          "type": "registry:lib"
+        },
+        {
           "path": "src/components/data-table/column-header.tsx",
           "type": "registry:component"
         },
@@ -249,10 +266,6 @@
           "type": "registry:component"
         },
         {
-          "path": "src/components/data-table/detail-sheet.tsx",
-          "type": "registry:component"
-        },
-        {
           "path": "src/components/data-table/table-skeleton.tsx",
           "type": "registry:component"
         },
@@ -262,6 +275,10 @@
         },
         {
           "path": "src/lib/labels.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/lib/routed.ts",
           "type": "registry:lib"
         }
       ]
@@ -334,10 +351,71 @@
       ]
     },
     {
+      "name": "routed-dialog",
+      "type": "registry:block",
+      "title": "Dialog roteado",
+      "description": "Dialog with its own URL for Parallel + Intercepting Routes: opens over a list without unmounting it, zooming out of the row or card it came from (View Transitions) and back on close. Full screen on the Celular, a large centred panel from md up. Closes on the browser and Android back, Esc, click outside and swipe down; navigating inside swaps only the content, with history. Same content as a full page (RoutedPage) for direct access and F5. Asks before discarding unsaved changes.",
+      "registryDependencies": [
+        "button",
+        "dialog",
+        "skeleton",
+        "@backoffice/theme"
+      ],
+      "css": {
+        "::view-transition-group(.routed-zoom)": {
+          "animation-duration": "250ms",
+          "animation-timing-function": "cubic-bezier(0.2, 0, 0, 1)"
+        },
+        "::view-transition-group(.routed-fade), ::view-transition-old(.routed-fade), ::view-transition-new(.routed-fade)": {
+          "animation-duration": "150ms"
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          "::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*)": {
+            "animation": "none !important"
+          }
+        }
+      },
+      "files": [
+        {
+          "path": "src/lib/labels.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/lib/routed.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/components/routed-dialog/routed-dialog.tsx",
+          "type": "registry:component",
+          "target": "components/routed-dialog/routed-dialog.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/layout.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/layout.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/default.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/default.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/[...catchAll]/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/[...catchAll]/page.tsx"
+        }
+      ]
+    },
+    {
       "name": "examples",
       "type": "registry:block",
       "title": "Example pages",
-      "description": "The demo pages (overview with charts, orders table with detail sheet, new-order form, empty state, settings, and the 2-step Quick order in the sidebar-free mobile flow) with sample data. Install to start from a working back office.",
+      "description": "The demo pages (overview with charts; orders with infinite scroll over 2,000 orders, the Detail, new and edit forms and the customer Detail opened as a Dialog roteado by intercepted routes, each also a full page; empty state; settings; and the 2-step Quick order in the mobile flow, also opened in the dialog) with sample data and a fake back end. Install to start from a working back office.",
       "registryDependencies": [
         "chart",
         "sheet",
@@ -345,11 +423,16 @@
         "@backoffice/data-table",
         "@backoffice/form-layout",
         "@backoffice/dashboard",
-        "@backoffice/mobile-flow"
+        "@backoffice/mobile-flow",
+        "@backoffice/routed-dialog"
       ],
       "files": [
         {
           "path": "src/lib/data/orders.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/lib/data/orders-store.ts",
           "type": "registry:lib"
         },
         {
@@ -380,19 +463,84 @@
           "target": "app/(app)/orders/orders-table.tsx"
         },
         {
+          "path": "src/app/(app)/orders/actions.ts",
+          "type": "registry:page",
+          "target": "app/(app)/orders/actions.ts"
+        },
+        {
+          "path": "src/app/(app)/orders/order-form.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/order-form.tsx"
+        },
+        {
           "path": "src/app/(app)/orders/new/page.tsx",
           "type": "registry:page",
           "target": "app/(app)/orders/new/page.tsx"
         },
         {
-          "path": "src/app/(app)/orders/new/order-form.tsx",
+          "path": "src/app/(app)/orders/[id]/page.tsx",
           "type": "registry:page",
-          "target": "app/(app)/orders/new/order-form.tsx"
+          "target": "app/(app)/orders/[id]/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/[id]/order-detail.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/[id]/order-detail.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/[id]/order-actions.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/[id]/order-actions.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/[id]/edit/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/[id]/edit/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/orders/[id]/edit/edit-order.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/orders/[id]/edit/edit-order.tsx"
         },
         {
           "path": "src/app/(app)/customers/page.tsx",
           "type": "registry:page",
           "target": "app/(app)/customers/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/customers/[id]/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/customers/[id]/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/customers/[id]/customer-detail.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/customers/[id]/customer-detail.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/(.)orders/[id]/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/(.)orders/[id]/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/(.)orders/[id]/edit/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/(.)orders/[id]/edit/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/(.)orders/new/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/(.)orders/new/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/(.)customers/[id]/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/(.)customers/[id]/page.tsx"
+        },
+        {
+          "path": "src/app/(app)/@modal/(.)quick-order/page.tsx",
+          "type": "registry:page",
+          "target": "app/(app)/@modal/(.)quick-order/page.tsx"
         },
         {
           "path": "src/app/(app)/settings/page.tsx",

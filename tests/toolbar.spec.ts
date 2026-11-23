@@ -2,8 +2,18 @@ import { expect, test, type Page } from "@playwright/test"
 
 const total = async (page: Page) => {
   const text = await page.getByRole("status").innerText()
-  return Number(text.match(/of (\d+)/)![1])
+  const match = text.match(/of ([\d,]+)/)
+  return match ? Number(match[1].replace(/,/g, "")) : NaN
 }
+
+const amounts = async (page: Page) =>
+  (await page.getByRole("list", { name: "Orders" }).locator("[data-slot='card-value']").allInnerTexts()).map((v) =>
+    Number(v.replace(/[^\d.]/g, "")),
+  )
+
+const isSorted = (values: number[], dir: "asc" | "desc") =>
+  values.length > 5 &&
+  values.every((v, i) => i === 0 || (dir === "asc" ? values[i - 1] <= v : values[i - 1] >= v))
 
 test.describe("Orders toolbar at 375px", () => {
   test("search is always visible; density and columns are hidden", async ({ page }) => {
@@ -22,13 +32,14 @@ test.describe("Orders toolbar at 375px", () => {
     await page.getByRole("button", { name: "Filters" }).click()
     const panel = page.getByRole("dialog", { name: "Filters" })
     await panel.getByRole("checkbox", { name: /Completed/ }).check()
-    const view = panel.getByRole("button", { name: /^View \d+ results$/ })
-    const n = Number((await view.innerText()).match(/\d+/)![0])
+    const view = panel.getByRole("button", { name: /^View [\d,]+ results$/ })
+    const shown = async () => Number((await view.innerText()).replace(/[^\d]/g, ""))
+    await expect.poll(shown).toBeLessThan(2000)
+    const n = await shown()
     expect(n).toBeGreaterThan(0)
-    expect(n).toBeLessThan(64)
     await view.click()
     await expect(panel).toBeHidden()
-    expect(await total(page)).toBe(n)
+    await expect.poll(() => total(page)).toBe(n)
     await expect(page.getByRole("button", { name: "Filters (1)" })).toBeVisible()
   })
 
@@ -38,7 +49,7 @@ test.describe("Orders toolbar at 375px", () => {
     const panel = page.getByRole("dialog", { name: "Filters" })
     await panel.getByRole("checkbox", { name: /Cancelled/ }).check()
     await panel.getByRole("button", { name: "Clear" }).click()
-    await expect(panel.getByRole("button", { name: "View 64 results" })).toBeVisible()
+    await expect(panel.getByRole("button", { name: "View 2,000 results" })).toBeVisible()
     await expect(panel.getByRole("checkbox", { name: /Cancelled/ })).not.toBeChecked()
   })
 
@@ -50,21 +61,12 @@ test.describe("Orders toolbar at 375px", () => {
     await panel.getByRole("radio", { name: "Descending" }).check()
     await panel.getByRole("button", { name: /^View/ }).click()
     await expect(panel).toBeHidden()
-    const values = await page
-      .getByRole("list", { name: "Orders" })
-      .locator("[data-slot='card-value']")
-      .allInnerTexts()
-    const amounts = values.map((v) => Number(v.replace(/[^\d.]/g, "")))
-    expect(amounts.length).toBeGreaterThan(5)
-    expect(amounts).toEqual([...amounts].sort((a, b) => b - a))
+    await expect.poll(async () => isSorted(await amounts(page), "desc")).toBe(true)
     await page.getByRole("button", { name: "Filters" }).click()
     await panel.getByRole("radio", { name: "Ascending" }).check()
     await panel.getByRole("button", { name: /^View/ }).click()
     await expect(panel).toBeHidden()
-    const asc = (await page.getByRole("list", { name: "Orders" }).locator("[data-slot='card-value']").allInnerTexts()).map(
-      (v) => Number(v.replace(/[^\d.]/g, "")),
-    )
-    expect(asc).toEqual([...asc].sort((a, b) => a - b))
+    await expect.poll(async () => isSorted(await amounts(page), "asc")).toBe(true)
   })
 })
 
@@ -84,6 +86,7 @@ test.describe("Orders toolbar at 1280px", () => {
     await page.getByRole("button", { name: /^Status/ }).click()
     await page.getByRole("option", { name: /Completed/ }).click()
     await page.keyboard.press("Escape")
+    await expect.poll(() => total(page)).toBeLessThan(2000)
     const desktop = await total(page)
 
     const phone = await browser.newPage({ viewport: { width: 375, height: 812 } })
@@ -92,7 +95,7 @@ test.describe("Orders toolbar at 1280px", () => {
     const panel = phone.getByRole("dialog", { name: "Filters" })
     await panel.getByRole("checkbox", { name: /Completed/ }).check()
     await panel.getByRole("button", { name: /^View/ }).click()
-    expect(await total(phone)).toBe(desktop)
+    await expect.poll(() => total(phone)).toBe(desktop)
     await phone.close()
   })
 })

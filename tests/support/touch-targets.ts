@@ -14,7 +14,7 @@ export async function undersizedTargets(page: Page) {
       const rect = el.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) continue
       if (style.visibility === "hidden" || style.display === "none") continue
-      if (style.opacity === "0" || el.closest("[aria-hidden='true']")) continue
+      if (style.opacity === "0" || el.closest("[aria-hidden='true'], [inert]")) continue
       if (rect.bottom < 0 || rect.right < 0) continue
       // Off-canvas (closed mobile sidebar) is not tappable.
       if (rect.right > window.innerWidth + 1 || rect.left < -1) continue

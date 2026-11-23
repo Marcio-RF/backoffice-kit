@@ -35,17 +35,17 @@ function rng(seed: number) {
 export const orders: Order[] = (() => {
   const r = rng(42)
   const base = Date.UTC(2026, 10, 16)
-  return Array.from({ length: 64 }, (_, i) => {
+  return Array.from({ length: 2000 }, (_, i) => {
     const f = first[Math.floor(r() * first.length)]
     const l = last[Math.floor(r() * last.length)]
     return {
-      id: `ORD-${(20480 - i).toString()}`,
+      id: `ORD-${(22480 - i).toString()}`,
       customer: `${f} ${l}`,
       email: `${f}.${l}`.normalize("NFD").toLowerCase().replace(/[^a-z.]/g, "") + "@example.com",
       channel: channels[Math.floor(r() * channels.length)],
       status: statuses[Math.floor(r() * statuses.length)],
       amount: Math.round((80 + r() * 1400) * 100) / 100,
-      createdAt: new Date(base - i * 9 * 3600 * 1000 - Math.floor(r() * 3600 * 1000)).toISOString(),
+      createdAt: new Date(base - i * 3 * 3600 * 1000 - Math.floor(r() * 3600 * 1000)).toISOString(),
     }
   })
 })()

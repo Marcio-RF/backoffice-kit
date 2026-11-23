@@ -45,8 +45,12 @@ O conjunto de filtros por faceta e a ordenação de uma listagem. No celular fic
 _Avoid_: chips, facetas (para o conjunto)
 
 **Detalhe**:
-O painel que mostra um registo e as suas ações. Abre de lado a partir de 768px e em tela cheia no celular.
+O conteúdo que mostra um registo e as suas ações. Abre num Dialog roteado sobre a listagem ou, pela mesma URL, como página inteira.
 _Avoid_: drawer, modal, sheet (para o conceito)
+
+**Dialog roteado**:
+A moldura com URL própria que abre por cima de uma listagem sem a desmontar, para o Detalhe, criar, editar ou uma ação. Tela cheia no celular, painel centrado a partir de 768px. Navegar dentro dela troca o conteúdo; nunca há dois empilhados.
+_Avoid_: modal, sheet, drawer, popup
 
 ## Fluxos
 

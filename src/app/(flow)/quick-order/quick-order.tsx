@@ -10,6 +10,7 @@ import {
   MobileFlowContent,
   MobileFlowHeader,
 } from "@/components/mobile-flow/mobile-flow"
+import { useRoutedDialog } from "@/components/routed-dialog/routed-dialog"
 import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel, FieldTitle } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,9 @@ const customers = [...new Map(orders.map((o) => [o.customer, o])).values()].slic
  */
 export function QuickOrder() {
   const router = useRouter()
+  // Opened from the list it is a Dialog roteado (see @modal/(.)quick-order): back and done close it.
+  const frame = useRoutedDialog()
+  const inDialog = frame.mode === "dialog"
   const [step, setStep] = React.useState<1 | 2>(1)
   const [customer, setCustomer] = React.useState("")
   const [amount, setAmount] = React.useState("")
@@ -42,14 +46,18 @@ export function QuickOrder() {
     setPending(true)
     setTimeout(() => {
       toast.success("Order created", { description: `${customer}: ORD-20482 was added to the queue.` })
-      router.push("/orders")
+      if (inDialog) frame.close()
+      else router.push("/orders")
     }, 600)
   }
 
   if (step === 1) {
     return (
       <MobileFlow>
-        <MobileFlowHeader title="Choose customer" backHref="/orders" right={<span className="text-muted-foreground">1 / 2</span>} />
+        <MobileFlowHeader
+          title="Choose customer"
+          {...(inDialog ? { onBack: () => frame.close() } : { backHref: "/orders" })}
+          right={<span className="text-muted-foreground">1 / 2</span>} />
         <MobileFlowContent>
           <RadioGroup value={customer} onValueChange={setCustomer} aria-label="Customer" className="gap-3">
             {customers.map((c) => (

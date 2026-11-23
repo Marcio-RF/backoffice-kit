@@ -102,9 +102,11 @@ export function FacetedFilter<TData, TValue>({
                       {isSelected ? <Check className="size-3" /> : null}
                     </span>
                     <span className="flex-1">{o.label}</span>
-                    <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                      {facets?.get(o.value) ?? 0}
-                    </span>
+                    {facets?.size ? (
+                      <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                        {facets.get(o.value) ?? 0}
+                      </span>
+                    ) : null}
                   </CommandItem>
                 )
               })}

@@ -28,6 +28,8 @@ export const navigation: NavGroup[] = [
 export const segmentLabels: Record<string, string> = {
   orders: "Orders",
   new: "New order",
+  edit: "Edit",
+  "quick-order": "Quick order",
   customers: "Customers",
   settings: "Settings",
 }

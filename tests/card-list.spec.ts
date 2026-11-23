@@ -31,30 +31,20 @@ test.describe("Orders at 375px shows the card list", () => {
     await expect(list.getByRole("button", { name: /^Actions for/ })).toHaveCount(0)
   })
 
-  test("the card is a single button named after its title", async ({ page }) => {
+  test("the card is a single link named after its title", async ({ page }) => {
     await page.goto("/orders")
     const card = page.getByRole("list", { name: "Orders" }).getByRole("listitem").first()
     const name = (await card.locator("[data-slot='card-title']").innerText()).split("\n")[0]
-    await expect(card.getByRole("button")).toHaveCount(1)
-    await expect(card.getByRole("button", { name })).toBeVisible()
+    await expect(card.getByRole("link")).toHaveCount(1)
+    await expect(card.getByRole("link", { name })).toBeVisible()
   })
 
   test("tapping a card opens the detail", async ({ page }) => {
     await page.goto("/orders")
     const card = page.getByRole("list", { name: "Orders" }).getByRole("listitem").first()
     const id = (await card.locator("[data-slot='card-subtitle']").innerText()).match(/ORD-\d+/)![0]
-    await card.getByRole("button").click()
+    await card.getByRole("link").click()
     await expect(page.getByRole("dialog")).toContainText(id)
-  })
-
-  test("pagination works over the cards", async ({ page }) => {
-    await page.goto("/orders")
-    const items = page.getByRole("list", { name: "Orders" }).getByRole("listitem")
-    await expect(items).toHaveCount(15)
-    const first = await items.first().innerText()
-    await page.getByRole("button", { name: "Next page" }).click()
-    await expect(page.getByRole("status")).toContainText("16–30 of 64")
-    expect(await items.first().innerText()).not.toBe(first)
   })
 
   test("search filters the cards", async ({ page }) => {
