@@ -10,7 +10,7 @@ test("New order: action bar stays flush with the viewport bottom after scrolling
   await page.goto("/orders/new")
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-  const bar = page.locator("[data-slot='form-actions']")
+  const bar = page.locator("[data-slot='routed-dialog-footer']")
   await expect(bar).toBeVisible()
   const { bottom, innerHeight } = await bar.evaluate((el) => ({
     bottom: el.getBoundingClientRect().bottom,

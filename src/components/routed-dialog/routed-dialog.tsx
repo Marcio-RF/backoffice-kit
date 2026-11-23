@@ -2,7 +2,7 @@
 
 import { ArrowLeft, X } from "lucide-react"
 import Link from "next/link"
-import { usePathname, useSelectedLayoutSegment } from "next/navigation"
+import { usePathname, useRouter, useSelectedLayoutSegment } from "next/navigation"
 import * as React from "react"
 import { createPortal } from "react-dom"
 
@@ -40,6 +40,13 @@ export const defaultRoutedDialogLabels: RoutedDialogLabels = {
   discardCancel: "Keep editing",
 }
 
+export type LeaveOptions = {
+  /** Skip the "Discard changes?" question, e.g. right after saving. */
+  force?: boolean
+  /** Fetch the page it goes back to again, e.g. the Detail after editing it. */
+  refresh?: boolean
+}
+
 type Frame = {
   mode: "dialog" | "page"
   labels: RoutedDialogLabels
@@ -47,9 +54,9 @@ type Frame = {
   /** Steps taken inside the dialog; 1 right after opening. */
   depth: number
   /** One step back (the ←). */
-  back: () => void
+  back: (options?: LeaveOptions) => void
   /** Back to the list, however many steps were taken (×, Esc, swipe down, click outside). */
-  close: () => void
+  close: (options?: LeaveOptions) => void
   /** Where ← goes on the full page. */
   backHref?: string
   setDirty: (dirty: boolean) => void
@@ -163,23 +170,35 @@ function Host({
   const [asking, setAsking] = React.useState<null | { then: () => void; restoreGuard: boolean }>(null)
   const setDirty = React.useCallback((value: boolean) => setDirtyState(value), [])
 
+  const router = useRouter()
   const leave = React.useCallback(
-    (stepsBack: number) => {
+    (stepsBack: number, refresh = false) => {
       const extra = guarded.current ? 1 : 0
       guarded.current = false
       setDirtyState(false)
-      goBackAnimated(stepsBack + extra, stepsBack >= depth, originNow)
+      void goBackAnimated(stepsBack + extra, stepsBack >= depth, originNow).then(() => {
+        if (refresh) router.refresh()
+      })
     },
-    [depth, originNow],
+    [depth, originNow, router],
   )
 
-  const guard = React.useCallback((then: () => void) => {
-    if (dirty) setAsking({ then, restoreGuard: false })
-    else then()
-  }, [dirty])
+  const guard = React.useCallback(
+    (then: () => void, force?: boolean) => {
+      if (dirty && !force) setAsking({ then, restoreGuard: false })
+      else then()
+    },
+    [dirty],
+  )
 
-  const back = React.useCallback(() => guard(() => leave(1)), [guard, leave])
-  const close = React.useCallback(() => guard(() => leave(depth)), [guard, leave, depth])
+  const back = React.useCallback(
+    (options?: LeaveOptions) => guard(() => leave(1, options?.refresh), options?.force),
+    [guard, leave],
+  )
+  const close = React.useCallback(
+    (options?: LeaveOptions) => guard(() => leave(depth, options?.refresh), options?.force),
+    [guard, leave, depth],
+  )
 
   React.useEffect(() => {
     if (!open || !dirty || guarded.current) return
@@ -331,7 +350,7 @@ function RoutedDialogFrame({ origin, children }: { origin: string; children: Rea
         aria-hidden
         data-slot="routed-dialog-backdrop"
         className="absolute inset-0 hidden bg-black/50 md:block"
-        onClick={close}
+        onClick={() => close()}
       />
       <React.ViewTransition name={routedTransitionName(origin)} share="routed-zoom" default="none">
         <div
@@ -357,12 +376,22 @@ function RoutedDialogFrame({ origin, children }: { origin: string; children: Rea
  * so the kit does: closing shrinks the dialog back into the row or card it came from, and a step
  * back inside it crossfades the content. The browser's own back button closes without the zoom.
  */
-function goBackAnimated(steps: number, closing: boolean, origin: string | null) {
+async function goBackAnimated(steps: number, closing: boolean, origin: string | null) {
   const panel = document.querySelector<HTMLElement>("[data-slot='routed-dialog']")
+  const from = window.location.href
+  // Resolves once the router has committed the page it went back to (the history moves asynchronously).
+  const settled = async () => {
+    for (let i = 0; i < 60; i++) {
+      await new Promise((r) => setTimeout(r, 16))
+      const moved = window.location.href !== from
+      if (moved && (closing ? !document.querySelector("[data-slot='routed-dialog']") : i > 2)) return
+    }
+  }
   const animate =
     "startViewTransition" in document && panel && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
   if (!animate) {
     window.history.go(-steps)
+    await settled()
     return
   }
   const name = closing && origin ? routedTransitionName(origin) : "routed-panel"
@@ -376,15 +405,9 @@ function goBackAnimated(steps: number, closing: boolean, origin: string | null) 
   }
   set(panel, closing ? "routed-zoom" : "routed-fade")
   let originEl: HTMLElement | null = null
-  const from = window.location.href
   const transition = document.startViewTransition(async () => {
     window.history.go(-steps)
-    // Wait for the router to commit the page it went back to (the history moves asynchronously).
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 16))
-      const moved = window.location.href !== from
-      if (moved && (closing ? !document.querySelector("[data-slot='routed-dialog']") : i > 2)) break
-    }
+    await settled()
     if (!closing || !origin) return
     const link = Array.from(document.querySelectorAll<HTMLElement>("a[href]")).find(
       (a) => a.getAttribute("href") === origin && a.offsetParent !== null,
@@ -392,6 +415,7 @@ function goBackAnimated(steps: number, closing: boolean, origin: string | null) 
     originEl = link?.closest<HTMLElement>("li, tr") ?? link ?? null
     set(originEl, "routed-zoom")
   })
+  await transition.updateCallbackDone.catch(() => {})
   transition.finished.finally(() => {
     unset(panel)
     unset(originEl)
@@ -532,7 +556,7 @@ export function RoutedPage({
       <section
         aria-labelledby={titleId}
         data-slot="routed-page"
-        className={cn("mx-auto flex w-full max-w-3xl flex-1 flex-col p-4 md:p-6", className)}
+        className={cn("mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pt-4 md:p-6", className)}
       >
         {children}
       </section>
@@ -553,7 +577,7 @@ export function RoutedDialogHeader({ className, children, ...props }: React.Comp
         </Button>
       ) : null
     ) : depth > 1 ? (
-      <Button variant="ghost" size="icon-sm" aria-label={labels.back} onClick={back} className="-ml-1.5">
+      <Button variant="ghost" size="icon-sm" aria-label={labels.back} onClick={() => back()} className="-ml-1.5">
         <ArrowLeft aria-hidden />
       </Button>
     ) : null
@@ -572,7 +596,7 @@ export function RoutedDialogHeader({ className, children, ...props }: React.Comp
       {backButton}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">{children}</div>
       {mode === "dialog" ? (
-        <Button variant="ghost" size="icon-sm" aria-label={labels.close} onClick={close} className="-mr-1.5">
+        <Button variant="ghost" size="icon-sm" aria-label={labels.close} onClick={() => close()} className="-mr-1.5">
           <X aria-hidden />
         </Button>
       ) : null}

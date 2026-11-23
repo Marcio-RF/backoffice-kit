@@ -56,7 +56,7 @@ export function QuickOrder() {
       <MobileFlow>
         <MobileFlowHeader
           title="Choose customer"
-          {...(inDialog ? { onBack: frame.close } : { backHref: "/orders" })}
+          {...(inDialog ? { onBack: () => frame.close() } : { backHref: "/orders" })}
           right={<span className="text-muted-foreground">1 / 2</span>} />
         <MobileFlowContent>
           <RadioGroup value={customer} onValueChange={setCustomer} aria-label="Customer" className="gap-3">

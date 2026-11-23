@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -17,7 +18,9 @@ export function OrderActions({ id }: { id: string }) {
       >
         Cancel order
       </Button>
-      <Button onClick={() => toast.success(`${id} confirmed`)}>Confirm order</Button>
+      <Button asChild>
+        <Link href={`/orders/${id}/edit`}>Edit</Link>
+      </Button>
     </>
   )
 }

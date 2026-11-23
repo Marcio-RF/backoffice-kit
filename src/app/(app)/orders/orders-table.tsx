@@ -47,7 +47,7 @@ function OrderLink({ order }: { order: Order }) {
   )
 }
 
-function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
+function buildColumns(open: (o: Order) => void, edit: (o: Order) => void): ColumnDef<Order>[] {
   return [
     {
       id: "select",
@@ -139,6 +139,7 @@ function buildColumns(open: (o: Order) => void): ColumnDef<Order>[] {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem onSelect={() => open(row.original)}>View details</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => edit(row.original)}>Edit</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => copyOrderId(row.original)}>
                 Copy order ID
               </DropdownMenuItem>
@@ -168,7 +169,14 @@ const ordersLabels = {
 
 export function OrdersTable() {
   const router = useRouter()
-  const columns = React.useMemo(() => buildColumns((o) => router.push(orderHref(o))), [router])
+  const columns = React.useMemo(
+    () =>
+      buildColumns(
+        (o) => router.push(orderHref(o)),
+        (o) => router.push(`${orderHref(o)}/edit`),
+      ),
+    [router],
+  )
 
   return (
     <>
