@@ -2,7 +2,8 @@ import { expect, test, type Page } from "@playwright/test"
 
 const total = async (page: Page) => {
   const text = await page.getByRole("status").innerText()
-  return Number(text.match(/of ([\d,]+)/)![1].replace(/,/g, ""))
+  const match = text.match(/of ([\d,]+)/)
+  return match ? Number(match[1].replace(/,/g, "")) : NaN
 }
 
 const amounts = async (page: Page) =>
@@ -11,6 +12,7 @@ const amounts = async (page: Page) =>
   )
 
 const isSorted = (values: number[], dir: "asc" | "desc") =>
+  values.length > 5 &&
   values.every((v, i) => i === 0 || (dir === "asc" ? values[i - 1] <= v : values[i - 1] >= v))
 
 test.describe("Orders toolbar at 375px", () => {
@@ -60,7 +62,6 @@ test.describe("Orders toolbar at 375px", () => {
     await panel.getByRole("button", { name: /^View/ }).click()
     await expect(panel).toBeHidden()
     await expect.poll(async () => isSorted(await amounts(page), "desc")).toBe(true)
-    expect((await amounts(page)).length).toBeGreaterThan(5)
     await page.getByRole("button", { name: "Filters" }).click()
     await panel.getByRole("radio", { name: "Ascending" }).check()
     await panel.getByRole("button", { name: /^View/ }).click()

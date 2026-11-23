@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 
 import { FixtureServerTable, FixtureTable, FixtureTableWithoutSlots } from "./fixture-table"
 
@@ -9,9 +10,11 @@ export default function FixturesPage() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
       <h1 className="text-xl font-semibold">Fixtures de Rótulos</h1>
-      <FixtureTable />
-      <FixtureTableWithoutSlots />
-      <FixtureServerTable />
+      <Suspense>
+        <FixtureTable />
+        <FixtureTableWithoutSlots />
+        <FixtureServerTable />
+      </Suspense>
     </main>
   )
 }

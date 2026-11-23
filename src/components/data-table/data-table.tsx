@@ -21,7 +21,8 @@ import {
 import { useWindowVirtualizer } from "@tanstack/react-virtual"
 import * as React from "react"
 
-import { type FetchPage, type ListQuery, emptyQuery, useInfiniteList } from "@/components/data-table/list-source"
+import { useUrlListQuery } from "@/components/data-table/list-query"
+import { type FetchPage, type ListQuery, useInfiniteList } from "@/components/data-table/list-source"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -207,8 +208,11 @@ export function DataTable<TData>(props: DataTableProps<TData>) {
   const { columns, label, toolbar, onRowClick, getRowId, emptyState, labels } = props
   const t = mergeLabels(defaultDataTableLabels, labels)
   const server = !!props.fetchPage
-  const [query, setQueryState] = React.useState<ListQuery>(emptyQuery)
-  const setQuery = React.useCallback((update: (q: ListQuery) => ListQuery) => setQueryState(update), [])
+  const columnIds = React.useMemo(
+    () => columns.map((c) => c.id ?? (c as { accessorKey?: string }).accessorKey).filter((id): id is string => !!id),
+    [columns],
+  )
+  const [query, setQuery] = useUrlListQuery(columnIds)
   const list = useInfiniteList(props.fetchPage, query)
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})

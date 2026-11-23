@@ -242,6 +242,10 @@
           "type": "registry:lib"
         },
         {
+          "path": "src/components/data-table/list-query.ts",
+          "type": "registry:lib"
+        },
+        {
           "path": "src/components/data-table/column-header.tsx",
           "type": "registry:component"
         },
